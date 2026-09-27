@@ -28,6 +28,8 @@ def authenticated(
             algorithms=["HS256"],
             audience="ford-api",
             issuer="ford-zero-touch",
+            # PyJWT só valida exp quando presente; sem "require", token sem exp nunca expira.
+            options={"require": ["exp", "iat", "sub"]},
         )
         return Principal(subject=claims["sub"], roles=frozenset(claims.get("roles", [])))
     except (jwt.PyJWTError, KeyError) as error:

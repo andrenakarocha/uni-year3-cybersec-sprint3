@@ -3,6 +3,7 @@ package br.com.fiap.ford.journey.security;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -26,6 +27,7 @@ public class TokenService {
                 .issuer("ford-zero-touch")
                 .audience(java.util.List.of("ford-api"))
                 .subject(subject)
+                .id(UUID.randomUUID().toString()) // jti: rastreia o token nos logs e permite revogação pontual
                 .issuedAt(now)
                 .expiresAt(now.plus(ttl))
                 .claim("roles", roles)
