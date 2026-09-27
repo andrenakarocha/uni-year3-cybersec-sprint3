@@ -3,7 +3,7 @@
 -- vin_hash (HMAC-SHA256 em hex), já que o texto cifrado muda a cada gravação.
 -- Linhas antigas em texto puro não são decifráveis: ambiente de POC recriado com `make clean`.
 ALTER TABLE customer_journeys ALTER COLUMN vin TYPE VARCHAR(128);
-ALTER TABLE customer_journeys ADD COLUMN vin_hash CHAR(64) NOT NULL;
+ALTER TABLE customer_journeys ADD COLUMN vin_hash VARCHAR(64) NOT NULL;
 
 DROP INDEX idx_customer_journeys_active_vin;
 CREATE UNIQUE INDEX idx_customer_journeys_active_vin_hash
