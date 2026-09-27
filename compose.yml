@@ -9,7 +9,9 @@ services:
   gateway:
     <<: *service-defaults
     image: nginx:1.27-alpine
-    ports: ["8088:8080"]
+    # Único ponto de entrada, e só no loopback. Os serviços não publicam porta: todo acesso passa
+    # pelo rate limit, limite de payload e cabeçalhos de segurança do gateway.
+    ports: ["127.0.0.1:8088:8080"]
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -23,7 +25,6 @@ services:
   customer-journey:
     <<: *service-defaults
     build: ./customer-journey-service
-    ports: ["8080:8080"]
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_URL: jdbc:postgresql://postgres:5432/journey
@@ -44,7 +45,6 @@ services:
   vehicle-intelligence:
     <<: *service-defaults
     build: ./vehicle-intelligence-service
-    ports: ["8000:8000"]
     environment:
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (make env)}
       MONGO_URL: mongodb://${MONGO_USER:-ford}:${MONGO_PASSWORD:?defina MONGO_PASSWORD no .env (make env)}@mongo:27017/telemetry?authSource=admin
@@ -62,7 +62,6 @@ services:
   workshop-operations:
     <<: *service-defaults
     build: ./workshop-operations-service
-    ports: ["5000:8080"]
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=workshop;Username=${POSTGRES_USER:-ford};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (make env)}
