@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Shift-left: barra o commit antes de o segredo ou a falha chegarem ao histórico.
+# Ativar com `make hooks`. Localmente a política é mais rígida que no CI: qualquer
+# padrão de credencial (inclusive não verificado) bloqueia; falso positivo se marca
+# na linha com o comentário `trufflehog:ignore` e justificativa.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACM)
+test "${#staged[@]}" -gt 0 || exit 0
+
+echo "pre-commit · Trufflehog nos arquivos staged"
+docker run --rm -v "$root:/repo" -w /repo "${TRUFFLEHOG_IMAGE:-trufflesecurity/trufflehog:3.97.9}" \
+  filesystem --no-update --fail --results=verified,unverified,unknown "${staged[@]}"
+
+echo "pre-commit · Semgrep nos arquivos staged"
+"$root/scripts/security/sast.sh" "${staged[@]}"

@@ -1,4 +1,4 @@
-.PHONY: up down build test smoke resilience verify logs clean
+.PHONY: up down build test smoke resilience verify logs clean security sast secrets hooks
 
 up:
 	docker compose up --build -d
@@ -32,3 +32,14 @@ logs:
 
 clean:
 	docker compose down --volumes --remove-orphans
+
+security: secrets sast
+
+sast:
+	./scripts/security/sast.sh
+
+secrets:
+	./scripts/security/secret-scan.sh
+
+hooks:
+	git config core.hooksPath .githooks
