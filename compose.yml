@@ -28,8 +28,8 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       DB_URL: jdbc:postgresql://postgres:5432/journey
       DB_USER: ${POSTGRES_USER:-ford}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-ford_local_only}
-      JWT_SECRET: ${JWT_SECRET:-zero-touch-development-secret-change-before-production-0123456789abcdef}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (make env)}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (make env)}
       REDIS_HOST: redis
       INTELLIGENCE_URL: http://vehicle-intelligence:8000
     depends_on:
@@ -46,8 +46,8 @@ services:
     build: ./vehicle-intelligence-service
     ports: ["8000:8000"]
     environment:
-      JWT_SECRET: ${JWT_SECRET:-zero-touch-development-secret-change-before-production-0123456789abcdef}
-      MONGO_URL: mongodb://${MONGO_USER:-ford}:${MONGO_PASSWORD:-ford_local_only}@mongo:27017/telemetry?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (make env)}
+      MONGO_URL: mongodb://${MONGO_USER:-ford}:${MONGO_PASSWORD:?defina MONGO_PASSWORD no .env (make env)}@mongo:27017/telemetry?authSource=admin
       REDIS_URL: redis://redis:6379/0
       LOG_LEVEL: INFO
     depends_on:
@@ -65,8 +65,8 @@ services:
     ports: ["5000:8080"]
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
-      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=workshop;Username=${POSTGRES_USER:-ford};Password=${POSTGRES_PASSWORD:-ford_local_only}
-      Jwt__Secret: ${JWT_SECRET:-zero-touch-development-secret-change-before-production-0123456789abcdef}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=workshop;Username=${POSTGRES_USER:-ford};Password=${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (make env)}
+      Jwt__Secret: ${JWT_SECRET:?defina JWT_SECRET no .env (make env)}
     depends_on:
       postgres: {condition: service_healthy}
     healthcheck:
@@ -80,7 +80,7 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ford}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ford_local_only}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (make env)}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
@@ -95,7 +95,7 @@ services:
     image: mongo:8.0
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-ford}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-ford_local_only}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?defina MONGO_PASSWORD no .env (make env)}
     volumes: [mongo-data:/data/db]
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]

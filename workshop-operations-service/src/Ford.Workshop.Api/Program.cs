@@ -60,6 +60,9 @@ builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 
 var secret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT secret is required");
+// HS256 exige chave de no mínimo 256 bits (RFC 7518 §3.2).
+if (Encoding.UTF8.GetByteCount(secret) < 32)
+    throw new InvalidOperationException("JWT secret must have at least 256 bits");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.MapInboundClaims = false;

@@ -66,7 +66,12 @@ class SecurityConfig {
 
     @Bean
     SecretKey jwtKey(@Value("${security.jwt.secret}") String secret) {
-        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        byte[] key = secret.getBytes(StandardCharsets.UTF_8);
+        // HS256 exige chave de no mínimo 256 bits (RFC 7518 §3.2); chave curta cai em força bruta offline.
+        if (key.length < 32) {
+            throw new IllegalStateException("security.jwt.secret must have at least 256 bits");
+        }
+        return new SecretKeySpec(key, "HmacSHA256");
     }
 
     @Bean
