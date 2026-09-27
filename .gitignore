@@ -14,3 +14,6 @@
 .idea/
 .vscode/
 docs/evidence/generated/
+
+# Relatórios gerados pelos scans de segurança
+reports/
