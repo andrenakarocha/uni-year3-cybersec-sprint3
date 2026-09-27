@@ -1,0 +1,124 @@
+name: ford-zero-touch
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks: [zero-touch]
+  security_opt: [no-new-privileges:true]
+
+services:
+  gateway:
+    <<: *service-defaults
+    image: nginx:1.27-alpine
+    ports: ["8088:8080"]
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      customer-journey:
+        condition: service_healthy
+      vehicle-intelligence:
+        condition: service_healthy
+      workshop-operations:
+        condition: service_healthy
+
+  customer-journey:
+    <<: *service-defaults
+    build: ./customer-journey-service
+    ports: ["8080:8080"]
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:postgresql://postgres:5432/journey
+      DB_USER: ${POSTGRES_USER:-ford}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-ford_local_only}
+      JWT_SECRET: ${JWT_SECRET:-zero-touch-development-secret-change-before-production-0123456789abcdef}
+      REDIS_HOST: redis
+      INTELLIGENCE_URL: http://vehicle-intelligence:8000
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  vehicle-intelligence:
+    <<: *service-defaults
+    build: ./vehicle-intelligence-service
+    ports: ["8000:8000"]
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-zero-touch-development-secret-change-before-production-0123456789abcdef}
+      MONGO_URL: mongodb://${MONGO_USER:-ford}:${MONGO_PASSWORD:-ford_local_only}@mongo:27017/telemetry?authSource=admin
+      REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: INFO
+    depends_on:
+      mongo: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  workshop-operations:
+    <<: *service-defaults
+    build: ./workshop-operations-service
+    ports: ["5000:8080"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=workshop;Username=${POSTGRES_USER:-ford};Password=${POSTGRES_PASSWORD:-ford_local_only}
+      Jwt__Secret: ${JWT_SECRET:-zero-touch-development-secret-change-before-production-0123456789abcdef}
+    depends_on:
+      postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  postgres:
+    <<: *service-defaults
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ford}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ford_local_only}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ford}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mongo:
+    <<: *service-defaults
+    image: mongo:8.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-ford}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-ford_local_only}
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    <<: *service-defaults
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lfu"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+networks:
+  zero-touch:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:

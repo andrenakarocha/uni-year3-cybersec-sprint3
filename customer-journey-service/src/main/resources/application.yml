@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: customer-journey-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/journey}
+    username: ${DB_USER:ford}
+    password: ${DB_PASSWORD:ford_local_only}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+  cache:
+    type: redis
+    redis:
+      time-to-live: 5m
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  error:
+    include-message: never
+
+logging:
+  structured:
+    format:
+      console: logstash
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:zero-touch-development-secret-change-before-production-0123456789abcdef}
+    ttl: PT1H
+
+clients:
+  intelligence-url: ${INTELLIGENCE_URL:http://localhost:8000}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      vehicleIntelligence:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 2
+  retry:
+    instances:
+      vehicleIntelligence:
+        max-attempts: 3
+        wait-duration: 250ms

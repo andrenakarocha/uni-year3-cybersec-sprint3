@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:journey;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+  cache:
+    type: simple
+
+security:
+  jwt:
+    secret: zero-touch-development-secret-change-before-production-0123456789abcdef
+    ttl: PT1H
+
