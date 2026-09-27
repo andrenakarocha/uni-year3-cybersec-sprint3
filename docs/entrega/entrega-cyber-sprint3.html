@@ -1,0 +1,888 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ford Zero Touch · DevSecOps · Sprint 3 Cybersecurity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #111827; --muted: #4b5563; --faint: #6b7280; --line: #d9dde5; --soft: #f3f5f9;
+    --ford: #0b2a6b; --accent: #1f5bd6; --accent-soft: #e8efff;
+    --ok: #0f7a4a; --ok-soft: #e3f5ec; --warn: #9a5b00; --warn-soft: #fff3dc;
+    --bad: #b42318; --bad-soft: #fde9e7; --plan: #475467; --plan-soft: #eef1f5;
+    --code-bg: #0f172a; --code-ink: #e2e8f0;
+  }
+  @page { size: A4; margin: 17mm 16mm 18mm 16mm;
+    @bottom-left { content: "Ford Zero Touch · DevSecOps · Sprint 3"; font: 8pt "IBM Plex Sans", "Noto Sans", sans-serif; color: #6b7280; }
+    @bottom-right { content: counter(page); font: 8pt "IBM Plex Sans", "Noto Sans", sans-serif; color: #6b7280; } }
+  @page :first { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font: 10pt/1.5 "IBM Plex Sans", "Noto Sans", sans-serif; color: var(--ink); background: #fff; }
+  h1, h2, h3, h4 { line-height: 1.25; color: var(--ford); margin: 0; }
+  h1 { font-size: 20pt; font-weight: 700; margin: 0 0 4mm; padding-bottom: 2.5mm; border-bottom: 2px solid var(--ford); break-before: page; }
+  h1 .step { display: block; font-size: 9pt; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 1mm; }
+  h2 { font-size: 13pt; font-weight: 600; margin: 6mm 0 2mm; break-after: avoid; }
+  h3 { font-size: 11pt; font-weight: 600; margin: 4.5mm 0 1.5mm; color: var(--ink); break-after: avoid; }
+  p { margin: 0 0 2.4mm; }
+  ul, ol { margin: 0 0 2.4mm; padding-left: 5mm; }
+  li { margin: 0 0 .8mm; }
+  a { color: var(--accent); text-decoration: none; }
+  strong { font-weight: 600; }
+  code { font: 8.6pt "JetBrains Mono", "JetBrainsMono NF", monospace; background: var(--soft); padding: .2mm 1mm; border-radius: 1mm; }
+  pre { font: 7.6pt/1.45 "JetBrains Mono", "JetBrainsMono NF", monospace; background: var(--code-bg); color: var(--code-ink);
+        padding: 3mm 3.5mm; border-radius: 2mm; margin: 0 0 3mm; white-space: pre-wrap; word-break: break-word; break-inside: avoid; }
+  pre code { background: none; padding: 0; font: inherit; color: inherit; }
+  pre.logs { font-size: 7.2pt; white-space: pre; }
+  pre .c { color: #94a3b8; } pre .k { color: #93c5fd; } pre .s { color: #86efac; } pre .r { color: #fca5a5; } pre .y { color: #fde68a; }
+  .lead { font-size: 10.5pt; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 3.5mm; font-size: 8.4pt; line-height: 1.4; }
+  thead { display: table-header-group; }
+  tr { break-inside: avoid; }
+  th { text-align: left; font-weight: 600; background: var(--ford); color: #fff; padding: 1.6mm 2mm; vertical-align: bottom; }
+  td { padding: 1.5mm 2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: #fafbfd; }
+  td code { font-size: 7.6pt; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .chip { display: inline-block; font-size: 7.4pt; font-weight: 600; padding: .3mm 1.8mm; border-radius: 3mm; white-space: nowrap; }
+  .ok { background: var(--ok-soft); color: var(--ok); } .warn { background: var(--warn-soft); color: var(--warn); }
+  .bad { background: var(--bad-soft); color: var(--bad); } .plan { background: var(--plan-soft); color: var(--plan); }
+  .na { background: var(--accent-soft); color: var(--accent); }
+  .callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 2.5mm 3.5mm; border-radius: 0 2mm 2mm 0; margin: 0 0 3.5mm; break-inside: avoid; }
+  .callout.win { border-color: var(--ok); background: var(--ok-soft); }
+  .callout.alert { border-color: var(--warn); background: var(--warn-soft); }
+  .callout p:last-child { margin: 0; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 2mm 0 4mm; }
+  .kpi { border: 1px solid var(--line); border-radius: 2mm; padding: 3mm; break-inside: avoid; }
+  .kpi b { display: block; font-size: 17pt; color: var(--ford); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 8pt; color: var(--muted); }
+  figure { margin: 1mm 0 4mm; break-inside: avoid; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { font-size: 8pt; color: var(--faint); margin-top: 1.5mm; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .avoid { break-inside: avoid; }
+  .small { font-size: 8.4pt; color: var(--muted); }
+  /* capa */
+  .cover { height: 297mm; width: 210mm; padding: 26mm 22mm 20mm; display: flex; flex-direction: column; justify-content: space-between;
+           background: linear-gradient(160deg, #081d4d 0%, #0b2a6b 55%, #1f5bd6 130%); color: #fff; }
+  .cover .tag { font-size: 9pt; letter-spacing: .14em; text-transform: uppercase; color: #9db8ff; font-weight: 600; }
+  .cover h0 { display: block; font-size: 34pt; font-weight: 700; line-height: 1.08; margin: 6mm 0 5mm; }
+  .cover .sub { font-size: 13pt; color: #d6e2ff; max-width: 150mm; }
+  .cover .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; font-size: 9.5pt; color: #d6e2ff; border-top: 1px solid rgba(255,255,255,.25); padding-top: 6mm; }
+  .cover .meta b { color: #fff; display: block; font-size: 10pt; margin-bottom: 1mm; }
+  .cover table { font-size: 9.5pt; margin: 0; } .cover td { border: 0; padding: .6mm 0; background: none !important; color: #fff; }
+  .toc { columns: 2; column-gap: 8mm; font-size: 9.5pt; }
+  .toc div { break-inside: avoid; margin-bottom: 1.2mm; }
+  .toc b { color: var(--ford); }
+</style>
+</head>
+<body>
+
+<!-- ═════════════════════════════ CAPA ═════════════════════════════ -->
+<section class="cover">
+  <div>
+    <div class="tag">Challenge Ford × FIAP 2026 · Sprint 3 · Cybersecurity</div>
+    <h0>Ford Zero Touch<br>DevSecOps e segurança contínua</h0>
+    <p class="sub">Pipeline com Semgrep e Trufflehog, correções reais no código, trilha de auditoria com resposta a incidentes e mapeamento OWASP da solução de pós-venda (API, mobile, IoT e ML).</p>
+  </div>
+  <div class="meta">
+    <div>
+      <b>Integrantes</b>
+      <table>
+        <tr><td>André Nakamatsu Rocha</td><td>RM555004</td></tr>
+        <tr><td>João Marcelo Furtado Romero</td><td>RM555199</td></tr>
+        <tr><td>Matheus Rivera Montovaneli</td><td>RM555499</td></tr>
+      </table>
+    </div>
+    <div>
+      <b>Repositório da entrega</b>
+      github.com/andrenakarocha/uni-year3-cybersec-sprint3<br><br>
+      <b>Data</b>
+      27/09/2026 · Desafio 02: VIN Share na América do Sul
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════════════════════ SUMÁRIO EXECUTIVO ═════════════════════════════ -->
+<h1 style="break-before: auto"><span class="step">Visão geral</span>Sumário executivo</h1>
+<p class="lead">Nesta sprint a segurança deixou de ser um documento e passou a rodar junto com o código. Partimos do código real da solução (os microsserviços entregues em SOA nesta sprint), colocamos um pipeline DevSecOps para varrê-lo, corrigimos o que ele encontrou, instrumentamos a trilha de auditoria que alimenta os alertas e mapeamos os riscos residuais contra os padrões OWASP.</p>
+
+<div class="kpis">
+  <div class="kpi"><b>22 → 0</b><span>achados SAST (Semgrep) do baseline até o fim da sprint</span></div>
+  <div class="kpi"><b>11</b><span>correções, cada uma em commit próprio e com teste que prova o comportamento</span></div>
+  <div class="kpi"><b>149</b><span>testes automatizados verdes (Java 60 · Python 41 · .NET 48)</span></div>
+  <div class="kpi"><b>6 / 6</b><span>cenários de ataque simulados bloqueados na stack real</span></div>
+</div>
+
+<h2>A solução protegida</h2>
+<p>O <strong>Ford Zero Touch</strong> aumenta o VIN Share tirando o atrito do pós-venda: o veículo envia telemetria (OBD-II), um modelo de risco decide quando recomendar manutenção e a concessionária conduz a jornada até a ordem de serviço. O cliente acompanha tudo pelo app <strong>Pitlane</strong>.</p>
+<figure>
+<svg viewBox="0 0 720 330" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Noto Sans, sans-serif" font-size="11">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#475467"/></marker></defs>
+  <!-- zonas -->
+  <rect x="6" y="20" width="150" height="300" rx="8" fill="#f3f5f9" stroke="#d9dde5"/>
+  <text x="16" y="38" font-weight="600" fill="#4b5563" font-size="10">INTERNET · NÃO CONFIÁVEL</text>
+  <rect x="190" y="20" width="130" height="300" rx="8" fill="#e8efff" stroke="#1f5bd6" stroke-dasharray="5 4"/>
+  <text x="200" y="38" font-weight="600" fill="#1f5bd6" font-size="10">BORDA (TB1)</text>
+  <rect x="352" y="20" width="362" height="300" rx="8" fill="#fff" stroke="#0b2a6b" stroke-dasharray="5 4"/>
+  <text x="362" y="38" font-weight="600" fill="#0b2a6b" font-size="10">REDE INTERNA DOCKER (TB2) · SEM PORTA NO HOST</text>
+  <!-- clientes -->
+  <g><rect x="20" y="58" width="122" height="46" rx="6" fill="#fff" stroke="#9aa4b2"/><text x="81" y="77" text-anchor="middle" font-weight="600">App Pitlane</text><text x="81" y="93" text-anchor="middle" fill="#6b7280" font-size="9.5">cliente · consultor</text></g>
+  <g><rect x="20" y="124" width="122" height="46" rx="6" fill="#fff" stroke="#9aa4b2"/><text x="81" y="143" text-anchor="middle" font-weight="600">Veículo OBD-II</text><text x="81" y="159" text-anchor="middle" fill="#6b7280" font-size="9.5">IoT · papel VEHICLE</text></g>
+  <g><rect x="20" y="190" width="122" height="46" rx="6" fill="#fff" stroke="#9aa4b2"/><text x="81" y="209" text-anchor="middle" font-weight="600">Concessionária</text><text x="81" y="225" text-anchor="middle" fill="#6b7280" font-size="9.5">ADVISER · TECHNICIAN</text></g>
+  <g><rect x="20" y="256" width="122" height="46" rx="6" fill="#fff" stroke="#b42318"/><text x="81" y="275" text-anchor="middle" font-weight="600" fill="#b42318">Atacante</text><text x="81" y="291" text-anchor="middle" fill="#b42318" font-size="9.5">força bruta · BOLA</text></g>
+  <!-- gateway -->
+  <rect x="202" y="96" width="106" height="150" rx="6" fill="#fff" stroke="#1f5bd6" stroke-width="1.5"/>
+  <text x="255" y="116" text-anchor="middle" font-weight="700" fill="#0b2a6b">Gateway Nginx</text>
+  <text x="255" y="132" text-anchor="middle" font-size="9.5" fill="#4b5563">127.0.0.1:8088</text>
+  <text x="212" y="152" font-size="9" fill="#111827">• rate limit 20 r/s</text>
+  <text x="212" y="166" font-size="9" fill="#111827">• login 5 r/min por IP</text>
+  <text x="212" y="180" font-size="9" fill="#111827">• corpo ≤ 1 MB</text>
+  <text x="212" y="194" font-size="9" fill="#111827">• headers de segurança</text>
+  <text x="212" y="208" font-size="9" fill="#111827">• X-Request-ID</text>
+  <text x="212" y="222" font-size="9" fill="#111827">• access log JSON</text>
+  <!-- setas clientes→gw -->
+  <path d="M142,81 L200,130" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <path d="M142,147 L200,160" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <path d="M142,213 L200,190" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <path d="M142,279 L200,226" stroke="#b42318" fill="none" marker-end="url(#a)" stroke-dasharray="4 3"/>
+  <!-- serviços -->
+  <g><rect x="366" y="54" width="162" height="70" rx="6" fill="#fff" stroke="#0b2a6b"/><text x="447" y="73" text-anchor="middle" font-weight="700">customer-journey</text><text x="447" y="88" text-anchor="middle" font-size="9.5" fill="#4b5563">Java 17 · Spring Boot</text><text x="447" y="103" text-anchor="middle" font-size="9" fill="#0f7a4a">emite JWT · lockout · AES-256-GCM</text><text x="447" y="116" text-anchor="middle" font-size="9" fill="#0f7a4a">posse por customer_id</text></g>
+  <g><rect x="366" y="140" width="162" height="70" rx="6" fill="#fff" stroke="#0b2a6b"/><text x="447" y="159" text-anchor="middle" font-weight="700">vehicle-intelligence</text><text x="447" y="174" text-anchor="middle" font-size="9.5" fill="#4b5563">Python 3.12 · FastAPI · ML</text><text x="447" y="189" text-anchor="middle" font-size="9" fill="#0f7a4a">valida JWT · posse por vins</text><text x="447" y="202" text-anchor="middle" font-size="9" fill="#0f7a4a">log de inferência sem VIN</text></g>
+  <g><rect x="366" y="226" width="162" height="70" rx="6" fill="#fff" stroke="#0b2a6b"/><text x="447" y="245" text-anchor="middle" font-weight="700">workshop-operations</text><text x="447" y="260" text-anchor="middle" font-size="9.5" fill="#4b5563">.NET 8 · ASP.NET Core</text><text x="447" y="275" text-anchor="middle" font-size="9" fill="#0f7a4a">valida JWT · só HS256</text><text x="447" y="288" text-anchor="middle" font-size="9" fill="#0f7a4a">posse por vins</text></g>
+  <path d="M308,140 L364,89" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <path d="M308,171 L364,175" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <path d="M308,202 L364,261" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <path d="M447,124 L447,138" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <text x="453" y="134" font-size="8.5" fill="#6b7280">JWT + request_id</text>
+  <!-- dados -->
+  <g><rect x="556" y="54" width="146" height="54" rx="6" fill="#f3f5f9" stroke="#9aa4b2"/><text x="629" y="75" text-anchor="middle" font-weight="600">PostgreSQL</text><text x="629" y="92" text-anchor="middle" font-size="9" fill="#0f7a4a">VIN cifrado + blind index</text></g>
+  <g><rect x="556" y="124" width="146" height="54" rx="6" fill="#f3f5f9" stroke="#9aa4b2"/><text x="629" y="145" text-anchor="middle" font-weight="600">MongoDB · Redis</text><text x="629" y="162" text-anchor="middle" font-size="9" fill="#4b5563">telemetria · cache</text></g>
+  <g><rect x="556" y="226" width="146" height="70" rx="6" fill="#fff" stroke="#1f5bd6"/><text x="629" y="247" text-anchor="middle" font-weight="600" fill="#1f5bd6">Trilha security.audit</text><text x="629" y="263" text-anchor="middle" font-size="9" fill="#4b5563">JSON · request_id</text><text x="629" y="277" text-anchor="middle" font-size="9" fill="#4b5563">→ coletor → SIEM</text></g>
+  <path d="M528,84 L554,81" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <path d="M528,168 L554,152" stroke="#475467" fill="none" marker-end="url(#a)"/>
+  <path d="M528,261 L554,261" stroke="#1f5bd6" fill="none" marker-end="url(#a)" stroke-dasharray="4 3"/>
+</svg>
+<figcaption>Figura 1. Arquitetura com fronteiras de confiança. TB1: toda entrada passa pelo gateway, o único componente publicado (e só em loopback). TB2: os serviços não publicam porta e validam o JWT por conta própria (defesa em profundidade). Em verde, os controles implementados nesta sprint.</figcaption>
+</figure>
+
+<h2>Onde está cada entrega</h2>
+<table>
+  <thead><tr><th style="width:26%">Etapa (peso)</th><th>O que entregamos</th><th style="width:24%">Evidência</th></tr></thead>
+  <tbody>
+    <tr><td><strong>1. Pipeline DevSecOps & análise de código</strong> (3,0)</td><td>Pipeline no GitHub Actions com Semgrep (rulesets públicos + 10 regras próprias) e Trufflehog (histórico completo) como gates; pre-commit local; pesquisa e jobs de SCA e Container Security (Trivy).</td><td><code>.github/workflows/devsecops.yml</code>, <code>.semgrep/</code>, <code>docs/evidence/</code></td></tr>
+    <tr><td><strong>2. Segurança em código e infraestrutura</strong> (2,5)</td><td>Criptografia local AES-256-GCM, hardening de API (superfície, rate limit, bloqueio de conta, validação), JWT endurecido nos três serviços, RBAC com autorização por objeto (BOLA).</td><td>11 commits de correção + testes; <code>simulate-attacks.sh</code></td></tr>
+    <tr><td><strong>3. Logs, alertas e resposta a incidentes</strong> (2,0)</td><td>Trilha <code>security.audit</code> padronizada nos três serviços e no gateway, correlação por <code>request_id</code>, regras de alerta para API, mobile, IoT e ML e playbooks SANS PICERL.</td><td><code>docs/evidence/after/logs/</code></td></tr>
+    <tr><td><strong>4. Pesquisa de vulnerabilidades (OWASP)</strong> (2,5)</td><td>Matrizes OWASP Top 10:2025, API Security Top 10:2023, Mobile Top 10:2024 (sobre o código real do app) e ASVS 5.0 nível 2, com análise de risco e plano de mitigação.</td><td>Seção 4 e <code>docs/evidence/mobile/</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Sumário</h2>
+<div class="toc">
+  <div><b>1. Pipeline DevSecOps & análise de código</b><br>1.1 Desenho do CI/CD · 1.2 Semgrep · 1.3 Trufflehog · 1.4 Como cada etapa reduz riscos · 1.5 SCA e Container Security · 1.6 Execução no projeto Ford</div>
+  <div><b>2. Segurança em código e infraestrutura</b><br>2.1 Resumo das correções · 2.2 Segredos · 2.3 Hardening de API · 2.4 JWT seguro · 2.5 Criptografia local · 2.6 RBAC e BOLA · 2.7 IoT (MQTT/TLS)</div>
+  <div><b>3. Logs, alertas e resposta a incidentes</b><br>3.1 Plano de monitoramento · 3.2 Logs estruturados reais · 3.3 Métricas e alertas · 3.4 Resposta a incidentes (PICERL)</div>
+  <div><b>4. Pesquisa de vulnerabilidades</b><br>4.1 Método · 4.2 OWASP Top 10:2025 · 4.3 API Top 10:2023 · 4.4 Mobile Top 10:2024 · 4.5 ASVS 5.0 · 4.6 Riscos residuais e plano de mitigação · 4.7 STRIDE, LGPD e segurança contínua</div>
+</div>
+
+<div class="callout"><p><strong>Ponto de partida honesto.</strong> O código base é o dos microsserviços de SOA da Sprint 3 (commit <code>e80f10a</code>), importado sem alterações no primeiro commit do repositório (<code>b4568d9</code>). Os componentes de segurança da nossa entrega de SOA + Cyber da Sprint 1 (AES-GCM, AuditLogger, detecção de atividade suspeita) foram trazidos para essa arquitetura atual e melhorados. Todo "antes × depois" deste documento compara esses dois pontos.</p></div>
+
+<!-- ═════════════════════════════ ETAPA 1 ═════════════════════════════ -->
+<h1><span class="step">Etapa 1 · peso 3,0</span>Pipeline DevSecOps e análise de código</h1>
+
+<h2>1.1 Desenho do pipeline CI/CD</h2>
+<p>A segurança roda em três momentos: <strong>na máquina do desenvolvedor</strong> (hook de pre-commit), <strong>em todo push e pull request</strong> (GitHub Actions) e <strong>toda segunda-feira</strong> (execução agendada, porque uma CVE nova aparece mesmo sem commit). Os scans usam os mesmos scripts nos três pontos, então o resultado local é o resultado do CI.</p>
+<figure>
+<svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Noto Sans, sans-serif" font-size="10.5">
+  <defs><marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#475467"/></marker></defs>
+  <!-- dev -->
+  <rect x="6" y="40" width="118" height="150" rx="8" fill="#f3f5f9" stroke="#d9dde5"/>
+  <text x="65" y="60" text-anchor="middle" font-weight="700" fill="#0b2a6b">Dev</text>
+  <rect x="16" y="72" width="98" height="30" rx="5" fill="#fff" stroke="#9aa4b2"/><text x="65" y="91" text-anchor="middle">git commit</text>
+  <rect x="16" y="112" width="98" height="66" rx="5" fill="#e8efff" stroke="#1f5bd6"/>
+  <text x="65" y="128" text-anchor="middle" font-weight="600" fill="#1f5bd6" font-size="9.5">pre-commit</text>
+  <text x="65" y="145" text-anchor="middle" font-size="9">Trufflehog (staged)</text>
+  <text x="65" y="159" text-anchor="middle" font-size="9">Semgrep (staged)</text>
+  <text x="65" y="172" text-anchor="middle" font-size="8.5" fill="#b42318">bloqueia o commit</text>
+  <path d="M124,115 L150,115" stroke="#475467" marker-end="url(#b)"/>
+  <text x="137" y="131" text-anchor="middle" font-size="8.5" fill="#6b7280">push/PR</text>
+  <!-- stage 1 -->
+  <rect x="152" y="20" width="176" height="110" rx="8" fill="#fff" stroke="#b42318"/>
+  <text x="240" y="38" text-anchor="middle" font-weight="700" fill="#b42318">[1] Gates de segurança</text>
+  <rect x="164" y="48" width="152" height="34" rx="5" fill="#fde9e7" stroke="#b42318"/><text x="240" y="63" text-anchor="middle" font-weight="600">secrets · Trufflehog</text><text x="240" y="76" text-anchor="middle" font-size="8.5">histórico git completo</text>
+  <rect x="164" y="88" width="152" height="34" rx="5" fill="#fde9e7" stroke="#b42318"/><text x="240" y="103" text-anchor="middle" font-weight="600">sast · Semgrep</text><text x="240" y="116" text-anchor="middle" font-size="8.5">registry + 10 regras Ford → SARIF</text>
+  <!-- stage 2 -->
+  <rect x="152" y="146" width="176" height="110" rx="8" fill="#fff" stroke="#0b2a6b"/>
+  <text x="240" y="164" text-anchor="middle" font-weight="700" fill="#0b2a6b">[2] Build e testes</text>
+  <text x="240" y="186" text-anchor="middle">Java · Gradle · 60 testes</text>
+  <text x="240" y="204" text-anchor="middle">Python · uv · ruff · 41 testes</text>
+  <text x="240" y="222" text-anchor="middle">.NET · dotnet test · 48 testes</text>
+  <text x="240" y="242" text-anchor="middle" font-size="8.5" fill="#6b7280">em paralelo com [1]</text>
+  <!-- gate join -->
+  <path d="M328,75 L372,130" stroke="#475467" fill="none" marker-end="url(#b)"/>
+  <path d="M328,201 L372,146" stroke="#475467" fill="none" marker-end="url(#b)"/>
+  <circle cx="382" cy="138" r="11" fill="#0b2a6b"/><text x="382" y="142" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">✓</text>
+  <text x="398" y="160" font-size="8.5" fill="#6b7280">tudo verde</text>
+  <path d="M393,138 L420,138" stroke="#475467" marker-end="url(#b)"/>
+  <!-- stage 3 -->
+  <rect x="422" y="60" width="148" height="156" rx="8" fill="#fff" stroke="#9a5b00"/>
+  <text x="496" y="78" text-anchor="middle" font-weight="700" fill="#9a5b00">[3] Supply chain</text>
+  <text x="496" y="92" text-anchor="middle" font-size="8.5" fill="#6b7280">Trivy · informativo</text>
+  <rect x="434" y="102" width="124" height="28" rx="5" fill="#fff3dc" stroke="#9a5b00"/><text x="496" y="120" text-anchor="middle">SCA dependências</text>
+  <rect x="434" y="136" width="124" height="28" rx="5" fill="#fff3dc" stroke="#9a5b00"/><text x="496" y="154" text-anchor="middle">Container ×3 imagens</text>
+  <rect x="434" y="170" width="124" height="28" rx="5" fill="#fff3dc" stroke="#9a5b00"/><text x="496" y="188" text-anchor="middle">IaC Dockerfiles</text>
+  <path d="M570,138 L596,138" stroke="#475467" marker-end="url(#b)"/>
+  <!-- deploy -->
+  <rect x="598" y="80" width="116" height="116" rx="8" fill="#f3f5f9" stroke="#9aa4b2" stroke-dasharray="4 3"/>
+  <text x="656" y="100" text-anchor="middle" font-weight="700" fill="#4b5563">Deploy</text>
+  <text x="656" y="116" text-anchor="middle" font-size="8.5" fill="#6b7280">(proposto)</text>
+  <text x="656" y="136" text-anchor="middle" font-size="9">merge em main</text>
+  <text x="656" y="152" text-anchor="middle" font-size="9">imagem assinada</text>
+  <text x="656" y="168" text-anchor="middle" font-size="9">segredos do cofre</text>
+  <text x="656" y="184" text-anchor="middle" font-size="9">smoke + ataques</text>
+  <!-- agenda -->
+  <rect x="152" y="268" width="562" height="26" rx="6" fill="#e8efff" stroke="#1f5bd6"/>
+  <text x="433" y="285" text-anchor="middle" font-size="9.5" fill="#1f5bd6"><tspan font-weight="600">Agendado (cron: segunda 06:00 BRT)</tspan> · pipeline completo de novo: pega CVEs novas em código que não mudou</text>
+  <!-- saídas -->
+  <text x="240" y="12" text-anchor="middle" font-size="8.5" fill="#6b7280">falha em [1] ou [2] barra o merge</text>
+</svg>
+<figcaption>Figura 2. Pipeline DevSecOps. Os pontos de execução do <strong>Semgrep</strong> e do <strong>Trufflehog</strong> são o pre-commit, o estágio [1] de todo push/PR e a execução agendada. Os achados vão para a aba Security → Code scanning (SARIF) e ficam como artefatos da execução.</figcaption>
+</figure>
+
+<p>O arquivo do pipeline fixa cada action por <strong>SHA de commit</strong> e cada scanner por <strong>versão de imagem</strong> (<code>semgrep 1.177.0</code>, <code>trufflehog 3.97.9</code>, <code>trivy 0.74.0</code>). O pipeline também é superfície de supply chain: uma tag de action pode ser movida por quem a controla, um SHA não. Permissões são mínimas (<code>contents: read</code>), e só os jobs que publicam SARIF recebem <code>security-events: write</code>.</p>
+
+<pre><code><span class="c"># .github/workflows/devsecops.yml (trecho)</span>
+<span class="k">jobs:</span>
+  <span class="k">secrets:</span>
+    <span class="k">steps:</span>
+      - <span class="k">uses:</span> actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 <span class="c"># v7.0.1</span>
+        <span class="k">with:</span> { fetch-depth: 0 }   <span class="c"># histórico completo: segredo apagado depois continua vazado</span>
+      - <span class="k">run:</span> ./scripts/security/secret-scan.sh
+  <span class="k">sast:</span>
+    <span class="k">permissions:</span> { contents: read, security-events: write }
+    <span class="k">steps:</span>
+      - <span class="k">run:</span> ./scripts/security/sast.sh          <span class="c"># sai com 1 se houver achado ERROR</span>
+      - <span class="k">uses:</span> github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 <span class="c"># v4.38.2</span>
+        <span class="k">with:</span> { sarif_file: reports/semgrep.sarif, category: semgrep }</code></pre>
+
+<h2>1.2 SAST com Semgrep</h2>
+<h3>Rulesets e regras aplicadas</h3>
+<p>O scan combina 10 rulesets públicos (<code>p/security-audit</code>, <code>p/owasp-top-ten</code>, <code>p/secrets</code>, <code>p/jwt</code>, <code>p/java</code>, <code>p/python</code>, <code>p/csharp</code>, <code>p/dockerfile</code>, <code>p/docker-compose</code>, <code>p/nginx</code>) com <strong>regras próprias do projeto</strong> em <code>.semgrep/ford-rules.yml</code>.</p>
+<div class="callout alert"><p><strong>Por que regras próprias.</strong> Rodamos primeiro só os rulesets públicos (407 regras) sobre o baseline: <strong>0 achados</strong> (<code>docs/evidence/baseline/semgrep-registry-only.json</code>). O código não tinha nenhum padrão genérico, e mesmo assim tinha BOLA, segredos com valor padrão e dado pessoal em texto puro. Regras genéricas não conhecem as políticas do projeto, como "cliente só lê o que é dele" e "só o gateway é exposto". Por isso as codificamos como regras.</p></div>
+<table>
+  <thead><tr><th style="width:34%">Regra própria</th><th>O que detecta</th><th style="width:20%">Referência</th><th class="num" style="width:9%">Baseline</th></tr></thead>
+  <tbody>
+    <tr><td><code>ford-secret-fallback-in-config</code></td><td>Segredo com valor padrão embutido: <code>${VAR:-valor}</code> (Compose) ou <code>${VAR:valor}</code> (Spring)</td><td>CWE-798</td><td class="num">10</td></tr>
+    <tr><td><code>ford-secret-default-in-python-settings</code></td><td>Campo <code>secret/password/token</code> com default literal em <code>BaseSettings</code></td><td>CWE-798</td><td class="num">1</td></tr>
+    <tr><td><code>ford-secret-in-appsettings</code></td><td>Credencial versionada em <code>appsettings*.json</code></td><td>CWE-798</td><td class="num">2</td></tr>
+    <tr><td><code>ford-internal-service-port-published</code></td><td>Serviço interno publicando porta no host (contorna o gateway)</td><td>API4, API8:2023</td><td class="num">3</td></tr>
+    <tr><td><code>ford-customer-read-without-ownership-check-java</code></td><td>Endpoint acessível a CUSTOMER que busca por ID sem receber o principal</td><td>CWE-639 · API1:2023</td><td class="num">1</td></tr>
+    <tr><td><code>…-python</code></td><td>Rota com parâmetro de caminho que descarta o principal (<code>_</code>)</td><td>CWE-639 · API1:2023</td><td class="num">1</td></tr>
+    <tr><td><code>…-csharp</code></td><td>Ação <code>[Authorize(Roles="…CUSTOMER…")]</code> por <code>Guid</code> sem consultar <code>User</code></td><td>CWE-639 · API1:2023</td><td class="num">1</td></tr>
+    <tr><td><code>ford-pii-column-without-encryption</code></td><td>Coluna de dado pessoal (VIN, CPF, e-mail…) sem <code>@Convert</code> de cifra</td><td>CWE-312 · A04:2025</td><td class="num">1</td></tr>
+    <tr><td><code>ford-login-without-security-audit</code></td><td>Endpoint de login que não registra falha na trilha de segurança</td><td>CWE-778 · A09:2025</td><td class="num">1</td></tr>
+    <tr><td><code>ford-jwt-access-token-too-long</code></td><td>Access token com TTL ≥ 30 min</td><td>CWE-613 · API2:2023</td><td class="num">1</td></tr>
+  </tbody>
+</table>
+<p class="small">Cada regra carrega CWE e categoria OWASP no metadado, que aparecem no SARIF e na aba Security. A regra de C# foi reforçada durante a sprint para cobrir também métodos com corpo em bloco. Validamos que ela marca a versão vulnerável e não marca a corrigida.</p>
+
+<h3>Resultado: baseline × depois das correções</h3>
+<div class="two">
+<pre><code><span class="c">$ make sast        # baseline b4568d9</span>
+<span class="r">Semgrep: 22 achado(s) — 20 bloqueante(s) (ERROR)</span>
+  [ERROR] ford-internal-service-port-published  compose.yml:26
+  [ERROR] ford-secret-fallback-in-config  compose.yml:32
+  <span class="c">… (8 segredos com fallback em compose.yml)</span>
+  [ERROR] ford-pii-column-without-encryption  …/JpaJourneyEntity.java:21
+  [WARNING] ford-login-without-security-audit  …/AuthController.java:31
+  [ERROR] ford-customer-read-without-ownership-check-java  …/JourneyController.java:40
+  [ERROR] ford-secret-fallback-in-config  …/application.yml:48
+  [WARNING] ford-jwt-access-token-too-long  …/application.yml:49
+  [ERROR] …-ownership-check-python  …/routes.py:44
+  [ERROR] ford-secret-default-in-python-settings  …/config.py:8
+  [ERROR] …-ownership-check-csharp  …/WorkOrdersController.cs:22
+  [ERROR] ford-secret-in-appsettings  …/appsettings.json:3
+<span class="c">exit 1 → pipeline vermelho</span></code></pre>
+<pre><code><span class="c">$ make sast        # fix/security-hardening</span>
+<span class="s">Semgrep: 0 achado(s) — 0 bloqueante(s) (ERROR)</span>
+<span class="c">exit 0 → gate verde</span>
+
+<span class="c">$ make secrets</span>
+<span class="s">Trufflehog: 0 achado(s) — 0 verificado(s)</span>
+Gate (verified + unknown):
+  nenhum segredo verificado ou não verificável
+
+<span class="c">$ docker compose config   # sem .env</span>
+<span class="y">error while interpolating services.customer-journey.
+environment.JWT_SECRET: required variable JWT_SECRET is
+missing a value: defina JWT_SECRET no .env (make env)</span></code></pre>
+</div>
+<p class="small">Figura 3. Saídas reais (<code>docs/evidence/baseline/sast-output.txt</code> e <code>docs/evidence/after/</code>). A lista completa dos 22 achados, com caminho e linha, está no JSON e no SARIF do baseline.</p>
+
+<div class="callout win"><p><strong>O gate funcionou contra nós mesmos.</strong> Ao implementar o rate limit do login, adicionamos um <code>add_header Retry-After</code> dentro de um <code>location</code> do Nginx. O Semgrep (<code>header-redefinition</code>, ruleset <code>p/nginx</code>) acusou na mesma hora: no Nginx, um <code>add_header</code> dentro de <code>location</code> anula os cabeçalhos herdados, e as respostas 429 saíam sem <code>nosniff</code>, <code>X-Frame-Options</code> e <code>Referrer-Policy</code>. Corrigimos no commit <code>271a3aa</code>, antes de chegar à branch principal. Esse é o valor do SAST no pipeline: pegar a regressão no próprio PR.</p></div>
+
+<h2>1.3 Secret scanning com Trufflehog</h2>
+<p>O Trufflehog varre <strong>todo o histórico git</strong>, não só o estado atual: um segredo removido num commit posterior continua exposto para quem clona o repositório. A política de bloqueio usa o resultado da verificação ativa que o Trufflehog faz contra o provedor da credencial:</p>
+<table>
+  <thead><tr><th style="width:18%">Resultado</th><th>Significado</th><th style="width:22%">No CI</th><th style="width:22%">No pre-commit</th></tr></thead>
+  <tbody>
+    <tr><td><code>verified</code></td><td>Credencial ativa, confirmada no provedor</td><td><span class="chip bad">bloqueia</span></td><td><span class="chip bad">bloqueia</span></td></tr>
+    <tr><td><code>unknown</code></td><td>Detector casou, mas a verificação não foi possível</td><td><span class="chip bad">bloqueia</span> na dúvida, trata como real</td><td><span class="chip bad">bloqueia</span></td></tr>
+    <tr><td><code>unverified</code></td><td>Detector casou e o provedor recusou a credencial</td><td><span class="chip warn">relatório</span> para triagem</td><td><span class="chip bad">bloqueia</span> (shift-left mais rígido)</td></tr>
+  </tbody>
+</table>
+
+<h3>Triagem de falso positivo</h3>
+<p>No baseline, o gate falhou com 2 resultados do detector <strong>JDBC</strong>: <code>jdbc:postgresql://localhost:5432/journey</code> (application.yml) e <code>jdbc:postgresql://postgres:5432/journey</code> (compose.yml). São URLs sem credencial (usuário e senha entram por <code>DB_USER</code>/<code>DB_PASSWORD</code>), classificadas como <code>unknown</code> porque o verificador não tem senha para testar. Decisão registrada no commit <code>66c8143</code>: excluir o detector JDBC. URLs com credencial embutida continuam cobertas pelos detectores Postgres, MongoDB e URI e pela regra Semgrep <code>ford-secret-fallback-in-config</code>.</p>
+
+<h3>Prova do shift-left: pre-commit barrando uma chave privada</h3>
+<pre><code><span class="c">$ git add canary/deploy-key.pem &amp;&amp; git commit   # chave RSA descartável, gerada só para o teste</span>
+pre-commit · Trufflehog nos arquivos staged
+<span class="r">Found unverified result 🐷🔑❓
+Detector Type: PrivateKey
+Raw result: [chave redigida]
+File: canary/deploy-key.pem</span>
+<span class="y">pre-commit exit=183   → commit bloqueado; a chave nunca entrou no histórico</span></code></pre>
+<p class="small">Figura 4. <code>docs/evidence/after/pre-commit-canary.txt</code>. O teste rodou só localmente e a chave foi apagada. Nenhum segredo falso foi enviado ao repositório público.</p>
+
+<h2>1.4 Como cada etapa reduz riscos</h2>
+<table>
+  <thead><tr><th style="width:17%">Etapa</th><th style="width:28%">Risco que endereça</th><th>Como reduz, neste projeto</th></tr></thead>
+  <tbody>
+    <tr><td>Pre-commit</td><td>Segredo commitado por engano; falha óbvia chegando ao PR</td><td>Barra antes de existir histórico. Remover um segredo do histórico exige reescrita e, em repositório público, rotação obrigatória.</td></tr>
+    <tr><td>Secret scanning (CI)</td><td>Credencial exposta (CWE-798), inclusive em commits antigos</td><td>Cobre o que escapou do hook (hook desativado, commit pela web) e o histórico completo, em todo PR e toda semana.</td></tr>
+    <tr><td>SAST</td><td>Falhas no código: BOLA, dado pessoal sem cifra, segredo com fallback, configuração insegura</td><td>Detectou 22 problemas reais e uma regressão introduzida durante a sprint. Bloqueia merge com severidade ERROR.</td></tr>
+    <tr><td>Testes automatizados</td><td>Correção de segurança que quebra funcionalidade, ou funcionalidade que desfaz uma correção</td><td>Cada correção tem teste (bloqueio de conta, BOLA, <code>exp</code> obrigatório, alg allowlist, VIN cifrado no banco). Uma regressão futura falha no CI.</td></tr>
+    <tr><td>SCA</td><td>Dependência com CVE conhecida (A03:2025)</td><td>Trivy sobre <code>gradle.lockfile</code> e <code>uv.lock</code>; lockfiles garantem que o que foi escaneado é o que roda.</td></tr>
+    <tr><td>Container e IaC</td><td>Imagem base vulnerável; Dockerfile inseguro (root, segredos em camada)</td><td>Trivy nas 3 imagens construídas e nos Dockerfiles. As imagens já rodam como usuário não-root.</td></tr>
+    <tr><td>Execução agendada</td><td>Vulnerabilidade divulgada depois do último commit</td><td>Reexecuta tudo semanalmente, sem depender de alguém mexer no código.</td></tr>
+  </tbody>
+</table>
+
+<h2>1.5 Pesquisa orientada: SCA e Container Security</h2>
+<div class="two">
+<div>
+<h3>SCA (Software Composition Analysis)</h3>
+<p>Aplicações modernas são majoritariamente código de terceiros. A SCA inventaria as dependências diretas e transitivas e as cruza com bases de vulnerabilidade (NVD, GitHub Advisory, OSV) e com licenças. Ferramentas: <strong>Dependabot</strong> (nativo do GitHub, abre PRs de atualização), <strong>Snyk</strong>, <strong>OWASP Dependency-Check</strong> e <strong>Trivy</strong>.</p>
+<p><strong>Onde entra no nosso ecossistema:</strong></p>
+<ul>
+  <li>Estágio [3] do pipeline: Trivy <code>fs</code> sobre os lockfiles de Java (Gradle) e Python (uv). No .NET sem lockfile, as dependências são cobertas pelo scan da imagem publicada.</li>
+  <li>App mobile (npm): o mesmo job no repositório Pitlane, sobre o <code>package-lock.json</code>.</li>
+  <li>Contínuo: Dependabot semanal por ecossistema (Gradle, uv, NuGet, npm, Docker, GitHub Actions), inclusive para os SHAs das actions.</li>
+  <li>Evolução: SBOM CycloneDX gerado no build e anexado à imagem, para responder em minutos a um incidente como o Log4Shell ("onde usamos esta biblioteca?").</li>
+</ul>
+</div>
+<div>
+<h3>Container Security</h3>
+<p>A imagem é o que de fato roda: sistema base, runtime e dependências empacotadas. A segurança de containers cobre três momentos: <strong>build</strong> (Dockerfile e imagem base), <strong>registro</strong> (varredura e assinatura) e <strong>execução</strong> (privilégios mínimos). Ferramentas: <strong>Trivy</strong> e <strong>Grype</strong> (varredura), <strong>Hadolint</strong> e <strong>Trivy config</strong> (Dockerfile), <strong>Cosign</strong> (assinatura) e <strong>Falco</strong> (runtime).</p>
+<p><strong>Onde entra no nosso ecossistema:</strong></p>
+<ul>
+  <li>Estágio [3]: build das 3 imagens e <code>trivy image</code> (HIGH/CRITICAL) com SARIF por serviço, mais <code>trivy config</code> nos Dockerfiles.</li>
+  <li>Já aplicado: builds multi-stage, usuário não-root nas 3 imagens, <code>no-new-privileges</code> no Compose, versões de imagem fixadas.</li>
+  <li>Evolução: imagens base distroless, <code>read_only</code> + <code>cap_drop: [ALL]</code> no Compose, assinatura Cosign no deploy e política de admissão que só aceita imagem assinada.</li>
+</ul>
+</div>
+</div>
+<p class="small">Nesta POC os jobs de SCA e container são <strong>informativos</strong>: publicam HIGH/CRITICAL na aba Security sem bloquear, porque CVEs de imagens base muitas vezes não têm correção disponível. Em produção, o bloqueio passaria a valer para CRITICAL com correção disponível.</p>
+
+<h2>1.6 Como o pipeline roda no projeto Ford</h2>
+<ol>
+  <li>O desenvolvedor ativa o hook uma vez (<code>make hooks</code>) e gera segredos locais aleatórios (<code>make env</code>). O pre-commit bloqueia segredo ou achado ERROR antes do commit.</li>
+  <li>Todo trabalho vai para uma branch semântica (<code>fix/…</code>, <code>feat/…</code>) com PR para <code>main</code>. O PR dispara o pipeline; gates e testes precisam ficar verdes para o merge.</li>
+  <li>Os achados aparecem inline no PR (SARIF → Code scanning) e como artefato (<code>semgrep-report</code>, <code>trufflehog-report</code>), com resumo em tabela na página da execução.</li>
+  <li>Após o merge, o pipeline roda em <code>main</code>. O deploy proposto publica a imagem assinada, injeta segredos a partir de um cofre (Azure Key Vault ou Vault) e roda o smoke test e o <code>simulate-attacks.sh</code> contra o ambiente.</li>
+  <li>Toda segunda-feira o pipeline completo reexecuta em <code>main</code>. Achado novo abre issue para o time.</li>
+</ol>
+<p>Nesta entrega, o fluxo foi seguido de fato: o baseline vulnerável ficou em <code>main</code>, e as 11 correções foram feitas na branch <code>fix/security-hardening</code>, com um commit e um teste por correção.</p>
+
+<!-- ═════════════════════════════ ETAPA 2 ═════════════════════════════ -->
+<h1><span class="step">Etapa 2 · peso 2,5</span>Segurança em código e infraestrutura</h1>
+
+<h2>2.1 Resumo das correções</h2>
+<table>
+  <thead><tr><th style="width:9%">Commit</th><th style="width:25%">Correção</th><th>O que mudou</th><th style="width:24%">Teste que prova</th></tr></thead>
+  <tbody>
+    <tr><td><code>66c8143</code></td><td>Triagem Trufflehog</td><td>Detector JDBC excluído com justificativa (falso positivo)</td><td>Gate verde, 0 resultados</td></tr>
+    <tr><td><code>5e2556e</code></td><td>Segredos obrigatórios</td><td>Sem fallback conhecido; <code>make env</code> gera aleatórios; chave &lt; 256 bits recusa o boot</td><td><code>JwtKeyTest</code>, <code>test_config.py</code></td></tr>
+    <tr><td><code>458f874</code></td><td>Superfície mínima</td><td>Só o gateway publicado, em <code>127.0.0.1</code></td><td>Ataque 5: portas fechadas</td></tr>
+    <tr><td><code>9333c27</code></td><td>Anti força bruta + auditoria</td><td>Nginx 5 req/min no login; bloqueio de conta após 5 falhas; eventos <code>auth.login.*</code></td><td><code>AuthLockoutTest</code>, <code>LoginAttemptGuardTest</code></td></tr>
+    <tr><td><code>569a17c</code></td><td>JWT endurecido</td><td>TTL 15 min, <code>jti</code>, <code>exp</code> obrigatório, somente HS256</td><td><code>JwtHardeningTest</code>, testes Python e .NET</td></tr>
+    <tr><td><code>f652e2e</code></td><td>Criptografia local</td><td>VIN com AES-256-GCM + blind index HMAC-SHA256</td><td><code>FieldEncryptionTest</code>, <code>VinEncryptionAtRestTest</code></td></tr>
+    <tr><td><code>271a3aa</code></td><td>Regressão do gateway</td><td>Cabeçalhos de segurança preservados no 429</td><td>Semgrep <code>header-redefinition</code></td></tr>
+    <tr><td><code>c214423</code></td><td>Trilha de auditoria</td><td>Eventos padronizados nos 3 serviços, <code>request_id</code>, log JSON no gateway</td><td><code>SecurityAuditEventsTest</code>, <code>test_observability.py</code></td></tr>
+    <tr><td><code>7802d55</code></td><td>BOLA</td><td>Autorização por objeto nos 3 serviços; 404 para recurso alheio</td><td><code>ObjectLevelAuthorizationTest</code>, smoke</td></tr>
+    <tr><td><code>d18ae08</code></td><td>Migração</td><td><code>vin_hash</code> como varchar (validação de schema no Postgres)</td><td>Stack sobe; smoke passa</td></tr>
+    <tr><td><code>c639072</code></td><td>Timestamps .NET</td><td>Logs JSON do .NET com horário UTC</td><td>Logs capturados</td></tr>
+  </tbody>
+</table>
+<p class="small">Além delas: 4 commits de pipeline e regras (na <code>main</code>, antes do scan do baseline), 1 de regras do app mobile, 1 do roteiro de ataques e 2 de evidências. Os dois últimos bugs da tabela só apareceram ao rodar a stack real, depois dos testes unitários verdes, o que justifica ter a execução ponta a ponta como parte da validação.</p>
+
+<h2>2.2 Gestão de segredos</h2>
+<p>No baseline, o segredo do JWT (<code>zero-touch-development-secret-change-before-production-0123456789abcdef</code>) e as senhas dos bancos estavam em 5 arquivos versionados como valor padrão. Se a variável de ambiente não fosse definida, os serviços subiam com um segredo <strong>publicado no GitHub</strong>, e qualquer pessoa poderia forjar um token ADMIN.</p>
+<div class="two">
+<pre><code><span class="c"># compose.yml: antes</span>
+JWT_SECRET: <span class="r">${JWT_SECRET:-zero-touch-development-secret-…}</span>
+<span class="c"># depois: ausência derruba o compose com instrução</span>
+JWT_SECRET: <span class="s">${JWT_SECRET:?defina JWT_SECRET no .env (make env)}</span>
+
+<span class="c"># scripts/security/generate-env.sh (make env)</span>
+umask 077                        <span class="c"># .env com permissão 600</span>
+JWT_SECRET=$(openssl rand -base64 48)
+FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)
+POSTGRES_PASSWORD=$(password)    <span class="c"># aleatória por ambiente</span></code></pre>
+<pre><code><span class="c">// SecurityConfig.java: recusa chave fraca no boot</span>
+<span class="k">byte</span>[] key = secret.getBytes(UTF_8);
+<span class="c">// HS256 exige ≥ 256 bits (RFC 7518 §3.2)</span>
+<span class="k">if</span> (key.length &lt; 32) {
+  <span class="k">throw new</span> IllegalStateException(
+    <span class="s">"security.jwt.secret must have at least 256 bits"</span>);
+}
+<span class="c"># config.py: sem default, o serviço não sobe</span>
+jwt_secret: str = Field(min_length=32)
+<span class="c">// Program.cs (.NET)</span>
+<span class="k">if</span> (Encoding.UTF8.GetByteCount(secret) &lt; 32) <span class="k">throw</span> …</code></pre>
+</div>
+
+<h2>2.3 Hardening de API</h2>
+<table>
+  <thead><tr><th style="width:22%">Controle</th><th>Implementação</th><th style="width:15%">Status</th></tr></thead>
+  <tbody>
+    <tr><td>Superfície de ataque</td><td>Os serviços deixaram de publicar portas no host (8080, 8000 e 5000). O gateway escuta só em <code>127.0.0.1:8088</code>. Isso também torna confiável o cabeçalho <code>X-Real-IP</code> que os serviços usam na auditoria, porque só o Nginx consegue falar com eles.</td><td><span class="chip ok">implementado</span></td></tr>
+    <tr><td>Rate limit</td><td>Nginx: 20 req/s por IP geral; <strong>5 req/min por IP no login</strong> (rajada de 10); resposta 429 em Problem Details com <code>Retry-After</code>.</td><td><span class="chip ok">implementado</span></td></tr>
+    <tr><td>Bloqueio de conta</td><td>5 falhas seguidas bloqueiam a conta por 15 min, <strong>mesmo com a senha certa depois</strong>. Vale também para usuário inexistente, para não revelar quais contas existem. Complementa o rate limit por IP contra ataques distribuídos.</td><td><span class="chip ok">implementado</span></td></tr>
+    <tr><td>Validação de entrada</td><td>Bean Validation (faixas físicas: temperatura −50 a 250 °C, bateria 0 a 30 V, até 50 códigos de falha), Pydantic e DataAnnotations; VIN como value object; corpo limitado a 1 MB no gateway.</td><td><span class="chip ok">já existia · mantido</span></td></tr>
+    <tr><td>Erros seguros</td><td>Problem Details (RFC 9457) nos 3 serviços, sem stack trace (<code>include-message: never</code>); o 500 é genérico.</td><td><span class="chip ok">já existia · mantido</span></td></tr>
+    <tr><td>Cabeçalhos</td><td><code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code>, <code>server_tokens off</code>; preservados também no 429.</td><td><span class="chip ok">implementado</span></td></tr>
+    <tr><td>Injeção de log</td><td><code>X-Request-ID</code> externo só é aceito com formato <code>[A-Za-z0-9-]{8,64}</code>; caso contrário é trocado por um UUID.</td><td><span class="chip ok">implementado</span></td></tr>
+  </tbody>
+</table>
+<pre><code><span class="c">$ ./scripts/security/simulate-attacks.sh      # contra a stack real (docker compose)</span>
+1. Força bruta contra uma conta (bloqueio após 5 falhas; dura 15 min, estado em memória)
+  ok   senha errada #1 → 401        <span class="c">… #2 a #5 → 401</span>
+  <span class="s">ok   senha CORRETA com a conta bloqueada → 429</span>
+2. Credential stuffing em rajada (rate limit do gateway, 5 req/min por IP)
+  <span class="s">ok   7 de 12 tentativas barradas no gateway (429)</span>
+  ok   429 do gateway no formato Problem Details
+3. Token forjado (assinatura inválida) e token sem assinatura (alg=none)
+  ok   assinatura adulterada → 401
+  ok   alg=none no .NET → 401
+4. BOLA: cliente tenta ler a jornada de outro cliente trocando o ID
+  <span class="s">ok   jornada alheia → 404
+  ok   risco de veículo alheio → 404</span>
+  ok   cliente tentando mudar ordem de serviço → 403
+5. Acesso direto aos serviços, contornando o gateway
+  ok   porta 8080 fechada no host    <span class="c">… 8000 e 5000 também</span>
+6. Dado pessoal em repouso: o que um dump do banco revela
+  <span class="y">v1:jg4DVt2QXaXI54iVGzKa5ugUnu51MTuHxmLUq…|2c4475431da10faa…</span>
+<span class="s">TODOS OS ATAQUES SIMULADOS FORAM BLOQUEADOS</span></code></pre>
+<p class="small">Figura 5. Roteiro de ataques versionado em <code>scripts/security/simulate-attacks.sh</code>. Saída completa em <code>docs/evidence/after/simulate-attacks.txt</code>.</p>
+
+<h2>2.4 JWT seguro</h2>
+<p>O Java emite os tokens; Python e .NET os validam de forma independente, sem confiar no gateway. Revisando as três validações, encontramos duas falhas que os testes originais não cobriam:</p>
+<ul>
+  <li><strong>Token sem <code>exp</code> nunca expirava no Java e no Python.</strong> Tanto o validador padrão do Spring quanto o PyJWT só conferem <code>exp</code> quando o claim existe. Um token vazado sem expiração valeria para sempre. Agora <code>exp</code> é obrigatório (<code>JwtClaimValidator</code> e <code>options={"require": ["exp", "iat", "sub"]}</code>).</li>
+  <li><strong>O .NET aceitava qualquer HMAC.</strong> Um token HS384 assinado com a mesma chave passava. Agora vale <code>ValidAlgorithms = [HmacSha256]</code>, e <code>alg=none</code> é rejeitado (ataque 3).</li>
+</ul>
+<table>
+  <thead><tr><th style="width:28%">Propriedade</th><th>Java (emissor)</th><th>Python</th><th>.NET</th></tr></thead>
+  <tbody>
+    <tr><td>Algoritmo fixo</td><td>HS256</td><td>HS256</td><td>HS256 (allowlist)</td></tr>
+    <tr><td>Chave ≥ 256 bits no boot</td><td>✓</td><td>✓</td><td>✓</td></tr>
+    <tr><td><code>iss</code> e <code>aud</code> validados</td><td>✓</td><td>✓</td><td>✓</td></tr>
+    <tr><td><code>exp</code> obrigatório</td><td>✓ (novo)</td><td>✓ (novo)</td><td>✓</td></tr>
+    <tr><td>TTL do access token</td><td colspan="3">15 min (era 1 h); <code>ClockSkew</code> de 30 s</td></tr>
+    <tr><td><code>jti</code> único</td><td colspan="3">em todo token: correlaciona o token nos logs e permite revogação pontual</td></tr>
+    <tr><td>Claims de posse</td><td colspan="3"><code>customer_id</code> e <code>vins</code> nos tokens de cliente (seção 2.6)</td></tr>
+  </tbody>
+</table>
+<div class="callout"><p><strong>Próximo passo recomendado: RS256.</strong> Com HS256, a mesma chave assina e valida, então quem compromete qualquer um dos três serviços consegue emitir tokens. Com RS256, o serviço de identidade assina com a chave privada e os demais validam só com a pública (JWKS). Ficou fora desta sprint por exigir troca coordenada nos três serviços e gestão de chaves de teste. Está no plano de mitigação (seção 4.6) como prioridade P2.</p></div>
+
+<h2>2.5 Criptografia local (dados em repouso)</h2>
+<p>O VIN vinculado a um cliente identifica a pessoa e permite inferir hábitos de uso: é <strong>dado pessoal</strong> pela LGPD. No baseline, ele ficava em texto puro no Postgres. Trouxemos o <code>EncryptedFieldConverter</code> da Sprint 1 e o melhoramos:</p>
+<table>
+  <thead><tr><th style="width:24%">Aspecto</th><th style="width:36%">Sprint 1</th><th>Agora (<code>FieldEncryption</code>)</th></tr></thead>
+  <tbody>
+    <tr><td>Chave</td><td><code>key.substring(0, 32).getBytes()</code>: texto legível, baixa entropia</td><td>32 bytes aleatórios em base64 (<code>FIELD_ENCRYPTION_KEY</code>), tamanho validado no boot</td></tr>
+    <tr><td>Uso da chave</td><td>A mesma chave para tudo</td><td>Subchaves derivadas por HMAC com rótulos distintos: cifra ≠ índice</td></tr>
+    <tr><td>Algoritmo</td><td colspan="2">AES-256-GCM com IV aleatório de 96 bits por valor (NIST SP 800-38D); o tag de 128 bits detecta adulteração</td></tr>
+    <tr><td>Formato</td><td><code>base64(iv):base64(ct)</code></td><td><code>v1:base64(iv‖ct‖tag)</code>: o prefixo de versão permite rotacionar a chave</td></tr>
+    <tr><td>Busca por VIN</td><td>Não suportada com cifra aleatória</td><td><strong>Blind index</strong> HMAC-SHA256 em <code>vin_hash</code>: a busca por jornada ativa e o índice único funcionam sem decifrar a tabela</td></tr>
+  </tbody>
+</table>
+<div class="two">
+<pre><code><span class="c">// JpaJourneyEntity.java</span>
+<span class="k">@Convert</span>(converter = EncryptedStringConverter.<span class="k">class</span>)
+String vin;
+String vinHash;   <span class="c">// HMAC-SHA256 hex, índice único parcial</span>
+
+<span class="c">// FieldEncryption.encrypt</span>
+random.nextBytes(iv);                  <span class="c">// 96 bits</span>
+cipher.init(ENCRYPT_MODE, encryptionKey,
+            <span class="k">new</span> GCMParameterSpec(128, iv));
+<span class="k">return</span> <span class="s">"v1:"</span> + base64(iv ‖ cipher.doFinal(pt));</code></pre>
+<pre><code><span class="c">$ psql -d journey -c "select vin, vin_hash
+                        from customer_journeys limit 2"</span>
+<span class="y">v1:TfeymxYlk3iSUnaKKnzxPX9/uSGmUyUMo77aO…
+    | dc54075fd05ede90…
+v1:jg4DVt2QXaXI54iVGzKa5ugUnu51MTuHxmLUq…
+    | 2c4475431da10faa…</span>
+<span class="c"># a API devolve o VIN em claro só a quem tem posse
+# (teste VinEncryptionAtRestTest confere as duas pontas)</span></code></pre>
+</div>
+<p class="small">Testes: ida e volta com IV sempre diferente, detecção de adulteração pelo tag GCM, rejeição de valor cifrado com outra chave, blind index determinístico e chave obrigatoriamente de 256 bits. Risco residual: o cache Redis guarda a jornada decifrada por 5 min (seção 4.6).</p>
+
+<h2>2.6 Controle de acesso por perfil (RBAC) e autorização por objeto</h2>
+<p>O enunciado cita os perfis <em>Brigadista, Gestor e Administrador</em>. No domínio de pós-venda Ford, eles correspondem aos papéis abaixo, mais dois papéis próprios do nosso negócio: o cliente e o dispositivo IoT.</p>
+<table>
+  <thead><tr><th style="width:17%">Papel</th><th style="width:19%">Equivalência</th><th>Pode</th><th style="width:21%">Não pode</th></tr></thead>
+  <tbody>
+    <tr><td><code>TECHNICIAN</code></td><td>Brigadista (execução em campo)</td><td>Ler ordens de serviço e avançar seus estados (diagnóstico → execução → qualidade)</td><td>Criar jornadas e ordens</td></tr>
+    <tr><td><code>ADVISER</code></td><td>Gestor (consultor da concessionária)</td><td>Criar jornadas e ordens, pedir recomendação ao modelo, conduzir a jornada</td><td>Mudar estado técnico da ordem</td></tr>
+    <tr><td><code>ADMIN</code></td><td>Administrador</td><td>Todas as operações + endpoints de operação (<code>/actuator</code>)</td><td>—</td></tr>
+    <tr><td><code>CUSTOMER</code></td><td>Cliente Ford (app Pitlane)</td><td>Ler <strong>somente</strong> a própria jornada, o risco e as ordens dos <strong>próprios</strong> veículos</td><td>Qualquer escrita</td></tr>
+    <tr><td><code>VEHICLE</code></td><td>Dispositivo OBD-II (IoT)</td><td>Enviar telemetria</td><td>Qualquer leitura</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead><tr><th>Endpoint (via gateway)</th><th class="num">CUSTOMER</th><th class="num">VEHICLE</th><th class="num">TECHNICIAN</th><th class="num">ADVISER</th><th class="num">ADMIN</th></tr></thead>
+  <tbody>
+    <tr><td><code>POST /journey/api/v1/journeys</code></td><td class="num">403</td><td class="num">403</td><td class="num">403</td><td class="num">✓</td><td class="num">✓</td></tr>
+    <tr><td><code>GET /journey/api/v1/journeys/{id}</code></td><td class="num"><strong>só dono</strong></td><td class="num">403</td><td class="num">403</td><td class="num">✓</td><td class="num">✓</td></tr>
+    <tr><td><code>POST /intelligence/api/v1/telemetry</code></td><td class="num">403</td><td class="num">✓</td><td class="num">403</td><td class="num">403</td><td class="num">✓</td></tr>
+    <tr><td><code>GET /intelligence/api/v1/vehicles/{vin}/risk</code></td><td class="num"><strong>só dono</strong></td><td class="num">403</td><td class="num">403</td><td class="num">✓</td><td class="num">✓</td></tr>
+    <tr><td><code>GET /workshop/api/v1/work-orders/{id}</code></td><td class="num"><strong>só dono</strong></td><td class="num">403</td><td class="num">✓</td><td class="num">✓</td><td class="num">✓</td></tr>
+    <tr><td><code>POST /workshop/…/work-orders/{id}/transitions</code></td><td class="num">403</td><td class="num">403</td><td class="num">✓</td><td class="num">403</td><td class="num">✓</td></tr>
+  </tbody>
+</table>
+<h3>A falha mais grave encontrada: BOLA (OWASP API1:2023)</h3>
+<p>O RBAC do baseline estava correto no <strong>o quê</strong> (papel), mas ignorava o <strong>sobre qual registro</strong>. Um token CUSTOMER lia a jornada, o risco do veículo e as ordens de serviço de <strong>qualquer</strong> cliente trocando o ID ou o VIN na URL. O próprio smoke test do baseline criava uma jornada para um cliente aleatório e conferia que <code>customer@ford.com</code> conseguia lê-la: a vulnerabilidade estava sendo testada como se fosse funcionalidade.</p>
+<div class="two">
+<pre><code><span class="c">// JourneyController.find: depois</span>
+JourneyView find(<span class="k">@PathVariable</span> UUID id,
+    <span class="k">@AuthenticationPrincipal</span> Jwt principal, …) {
+  <span class="k">var</span> journey = service.find(id);
+  <span class="k">if</span> (!Ownership.canReadCustomerData(
+        principal, journey.customerId())) {
+    audit.objectAccessDenied(<span class="s">"customer_journey"</span>, id, …);
+    <span class="c">// 404, não 403: não confirma que existe</span>
+    <span class="k">throw new</span> JourneyNotFoundException(id);
+  }
+  <span class="k">return</span> journey;
+}</code></pre>
+<div>
+<p><strong>Como a posse chega aos três serviços:</strong> o token do cliente carrega <code>customer_id</code> e <code>vins</code>, os veículos resolvidos no login a partir das jornadas do cliente. Em produção, esse papel seria do provedor de identidade da Ford. O Java confere <code>customer_id</code>; Python e .NET, que não conhecem clientes, conferem o VIN contra <code>vins</code>. Papéis de equipe mantêm acesso total.</p>
+<p>O recurso alheio responde <strong>404, não 403</strong>, para o atacante não conseguir enumerar IDs válidos. Cada tentativa gera o evento <code>authz.object.denied</code>, que alimenta o alerta de enumeração (seção 3.3). O smoke test agora <strong>prova o bloqueio</strong>.</p>
+</div>
+</div>
+
+<h2>2.7 IoT: segurança MQTT/TLS</h2>
+<p>Na POC, a telemetria chega por HTTPS à API com o papel <code>VEHICLE</code>, que só pode enviar dados (nunca ler) e passa pela validação física das leituras. Para a frota real, que publica via MQTT, o desenho proposto é:</p>
+<ul>
+  <li><strong>TLS 1.3 com autenticação mútua (mTLS):</strong> cada dispositivo OBD-II recebe um certificado X.509 próprio, emitido por uma CA da Ford na fabricação ou ativação. Nada de usuário e senha compartilhados na frota.</li>
+  <li><strong>ACL por tópico:</strong> o dispositivo do VIN X só publica em <code>vehicles/X/telemetry</code> e só assina <code>vehicles/X/commands</code>. O VIN do tópico precisa bater com o do certificado; um dispositivo comprometido não se passa por outro veículo.</li>
+  <li><strong>Revogação:</strong> CRL ou OCSP no broker. Um dispositivo roubado ou adulterado é desligado da frota sem afetar os demais.</li>
+  <li><strong>Integridade e ponte para a API:</strong> payload assinado com HMAC (como a <code>PayloadSignatureFilter</code> da Sprint 1); o broker não acessa os bancos, e um consumidor autenticado como <code>VEHICLE</code> repassa as leituras à API, que mantém a validação física e o rate limit.</li>
+</ul>
+
+<!-- ═════════════════════════════ ETAPA 3 ═════════════════════════════ -->
+<h1><span class="step">Etapa 3 · peso 2,0</span>Logs, alertas e resposta a incidentes</h1>
+
+<h2>3.1 Plano de monitoramento</h2>
+<p>Os três serviços e o gateway escrevem eventos de segurança em JSON na saída padrão, num logger dedicado <code>security.audit</code>. Um coletor (Fluent Bit ou Vector) envia os eventos a um SIEM (Elastic, Grafana Loki ou Azure Monitor) separado do log de aplicação. O formato usa nomes de campo no estilo <strong>ECS</strong> (Elastic Common Schema) e é o mesmo nos três serviços. Assim, uma única regra de alerta cobre Java, Python e .NET.</p>
+<table>
+  <thead><tr><th style="width:24%">Evento (<code>event.action</code>)</th><th>Quando ocorre</th><th style="width:28%">Campos principais</th></tr></thead>
+  <tbody>
+    <tr><td><code>auth.login.success</code> / <code>.failure</code></td><td>Toda tentativa de login</td><td><code>user.name</code> (mascarado), <code>source.ip</code></td></tr>
+    <tr><td><code>auth.login.blocked</code></td><td>Tentativa em conta bloqueada</td><td>idem</td></tr>
+    <tr><td><code>auth.token.rejected</code></td><td>401: token ausente, inválido, expirado ou de algoritmo não aceito</td><td><code>event.reason</code>, rota, IP</td></tr>
+    <tr><td><code>authz.denied</code></td><td>403: papel sem permissão para a função</td><td>usuário, método, rota</td></tr>
+    <tr><td><code>authz.object.denied</code></td><td>Tentativa de acessar recurso de outro cliente (BOLA)</td><td><code>resource.type</code>, <code>resource.id</code></td></tr>
+    <tr><td><code>journey.*</code> / <code>workorder.*</code></td><td>Alterações críticas: criação e mudança de estado</td><td>quem, recurso, novo estado</td></tr>
+    <tr><td><code>ml.inference</code></td><td>Cada avaliação do modelo de risco</td><td><code>model_version</code>, <code>risk_level</code>, <code>risk_score</code></td></tr>
+    <tr><td><code>gateway.access</code></td><td>Toda requisição que passa pelo Nginx, inclusive 429</td><td>status, latência, upstream</td></tr>
+  </tbody>
+</table>
+<p><strong>Privacidade nos logs (LGPD, minimização):</strong> e-mails saem mascarados (<code>cu***@ford.com</code>), tokens nunca são registrados, o evento de ML não leva o VIN e o <code>request_id</code> externo é saneado contra injeção de log. <strong>Correlação:</strong> o gateway gera o <code>X-Request-ID</code>, que vira <code>request_id</code> em toda linha de log da requisição e é repassado do Java ao Python. Um único ID reconstrói o caminho completo.</p>
+
+<h2>3.2 Exemplos reais de logs estruturados</h2>
+<p class="small">Linhas capturadas da stack em execução durante o roteiro de ataques (<code>docker compose logs</code>), sem edição de conteúdo. Arquivos completos em <code>docs/evidence/after/logs/</code>.</p>
+<pre class="logs"><code><span class="c"># customer-journey (Java): força bruta → bloqueio da conta</span>
+{"@timestamp":"2026-09-27T21:28:02.479Z","logger_name":"security.audit","level":"WARN",
+ "request_id":"df1ad5cec6f0dba2e5ffc2da4cb82247",<span class="y">"event.action":"auth.login.blocked"</span>,
+ "event.category":"authentication","event.outcome":"denied","user.name":"te***@ford.com","source.ip":"172.19.0.1"}
+
+<span class="c"># customer-journey (Java): token adulterado</span>
+{"@timestamp":"2026-09-27T21:29:02.784Z","logger_name":"security.audit","level":"WARN",
+ "request_id":"ca7a038b53525c7dd092040668073730",<span class="y">"event.action":"auth.token.rejected"</span>,
+ "event.reason":"InvalidBearerTokenException","http.request.method":"GET",
+ "url.path":"/api/v1/journeys/00000000-0000-0000-0000-000000000000","source.ip":"172.19.0.1"}
+
+<span class="c"># customer-journey (Java): alteração crítica</span>
+{"@timestamp":"2026-09-27T21:26:05.194Z","logger_name":"security.audit","level":"INFO",
+ "request_id":"48929cd822e604a8b0e61fcb3b6d4eb6",<span class="y">"event.action":"journey.status.changed"</span>,
+ "user.name":"ad***@ford.com","resource.type":"customer_journey","resource.id":"ffa42176-…",
+ "change.detail":"status=COMPLETED"}
+
+<span class="c"># vehicle-intelligence (Python): inferência de ML, sem VIN</span>
+{<span class="y">"event":"ml.inference"</span>,"model_version":"rules-v1","risk_level":"HIGH","risk_score":0.5516,
+ "action":"SCHEDULE_WITHIN_24_HOURS","reasons":4,"request_id":"d194824089316d202ff8eb59285dbf7e",
+ "level":"info","timestamp":"2026-09-27T21:26:43.416126Z"}
+
+<span class="c"># workshop-operations (.NET): alteração crítica em ordem de serviço</span>
+{"Timestamp":"2026-09-27T21:37:44.412Z","LogLevel":"Information","Category":"security.audit",
+ "State":{<span class="y">"EventAction":"workorder.status.changed"</span>,"UserName":"te***@ford.com",
+ "ResourceType":"work_order","ResourceId":"ad7dd8c0-…","ChangeDetail":"status=Completed"}}
+
+<span class="c"># gateway (Nginx): credential stuffing barrado no login</span>
+{"@timestamp":"2026-09-27T21:28:02+00:00","event.dataset":"gateway.access",
+ "request_id":"b891beb1512d626221d5f667ec552cc4","source.ip":"172.19.0.1","http.request.method":"POST",
+ "url.path":"/journey/api/v1/auth/token",<span class="y">"http.response.status_code":429</span>,"request_time_s":0.000}</code></pre>
+<h3>Correlação: uma tentativa de BOLA rastreada de ponta a ponta</h3>
+<pre><code><span class="c"># mesmo request_id no gateway e no serviço (docs/evidence/after/logs/correlation-bola.jsonl)</span>
+gateway.access  request_id=<span class="y">f2c6ef77a30da2ec5aa3f86a454a36e5</span>
+                GET /journey/api/v1/journeys/4b65b57f-… → 404
+security.audit  request_id=<span class="y">f2c6ef77a30da2ec5aa3f86a454a36e5</span>
+                authz.object.denied · user=cu***@ford.com · resource=customer_journey 4b65b57f-…</code></pre>
+
+<h2>3.3 Métricas e alertas</h2>
+<p>As regras abaixo são disparadas a partir dos eventos da seção 3.1. Os limiares são pontos de partida para a POC e devem ser calibrados com o tráfego real das concessionárias. Severidade: <span class="chip bad">Alta</span> aciona o plantão, <span class="chip warn">Média</span> abre ticket no mesmo dia, <span class="chip plan">Baixa</span> entra no relatório semanal.</p>
+<table>
+  <thead><tr><th style="width:8%">Domínio</th><th style="width:30%">Alerta</th><th>Gatilho</th><th style="width:10%">Sev.</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="6"><strong>API</strong></td><td>Força bruta / credential stuffing</td><td>≥ 10 <code>auth.login.failure</code> do mesmo <code>source.ip</code> em 5 min, ou ≥ 5 para o mesmo <code>user.name</code> em 15 min</td><td><span class="chip bad">Alta</span></td></tr>
+    <tr><td>Ataque distribuído a contas</td><td>≥ 3 contas diferentes em <code>auth.login.blocked</code> em 10 min</td><td><span class="chip bad">Alta</span></td></tr>
+    <tr><td>Enumeração de objetos (BOLA)</td><td>≥ 3 <code>authz.object.denied</code> do mesmo usuário em 10 min</td><td><span class="chip bad">Alta</span></td></tr>
+    <tr><td>Tentativa de escalada de privilégio</td><td>≥ 5 <code>authz.denied</code> do mesmo usuário em 10 min</td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td>Token forjado em massa</td><td><code>auth.token.rejected</code> &gt; 50/min no total (sinal de chave vazada ou replay)</td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td>Disponibilidade</td><td>429 do gateway &gt; 100 em 5 min; 5xx &gt; 2% em 5 min; p95 de latência &gt; 1 s</td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td rowspan="4"><strong>Mobile</strong></td><td>Possível MITM</td><td>Falha de validação de certificado (pinning) reportada pelo app</td><td><span class="chip bad">Alta</span></td></tr>
+    <tr><td>Estabilidade de versão</td><td>Crash rate &gt; 1% por versão do app em 24 h</td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td>Aparelho comprometido</td><td>Login a partir de dispositivo com root ou jailbreak</td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td>Versão obsoleta</td><td>Chamadas de versão do app abaixo da mínima suportada</td><td><span class="chip plan">Baixa</span></td></tr>
+    <tr><td rowspan="4"><strong>IoT</strong></td><td>Dispositivo clonado ou falso</td><td>≥ 5 falhas de mTLS/min no broker para o mesmo client-id, ou VIN do tópico diferente do certificado</td><td><span class="chip bad">Alta</span></td></tr>
+    <tr><td>Dispositivo adulterado ou fuzzing</td><td>Pico de 422 em <code>/telemetry</code> (leituras fisicamente impossíveis)</td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td>Replay ou flood</td><td>Mais de 1 mensagem a cada 10 s por VIN, sustentado por 5 min</td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td>Dispositivo silencioso</td><td>VIN ativo sem telemetria há mais de 24 h</td><td><span class="chip plan">Baixa</span></td></tr>
+    <tr><td rowspan="4"><strong>ML</strong></td><td>Deriva ou envenenamento de dados</td><td>Proporção de <code>risk_level</code> HIGH+CRITICAL em 1 h fora de ±3σ da média de 7 dias</td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td>Regressão de modelo</td><td><code>risk_score</code> médio varia &gt; 20% após troca de <code>model_version</code></td><td><span class="chip warn">Média</span></td></tr>
+    <tr><td>Falha de inferência</td><td>5xx em <code>/telemetry</code> ou <code>/recommendations/evaluate</code> &gt; 1%</td><td><span class="chip bad">Alta</span></td></tr>
+    <tr><td>Abuso ou extração de modelo</td><td>Volume de inferências por token acima de 10× a mediana da frota</td><td><span class="chip warn">Média</span></td></tr>
+  </tbody>
+</table>
+<pre><code><span class="c"># Exemplo de regra (Grafana Loki · LogQL): força bruta por IP</span>
+sum by (source_ip) (
+  count_over_time({app="customer-journey"} | json | event_action="auth.login.failure" [5m])
+) &gt;= 10
+
+<span class="c"># Exemplo: enumeração de objetos (BOLA), nos três serviços ao mesmo tempo</span>
+sum by (user_name) (
+  count_over_time({app=~"customer-journey|vehicle-intelligence|workshop-operations"} | json
+    | event_action="authz.object.denied" or event="authz.object.denied" [10m])
+) &gt;= 3</code></pre>
+
+<h2>3.4 Plano de resposta a incidentes (SANS PICERL)</h2>
+<figure>
+<svg viewBox="0 0 720 118" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, Noto Sans, sans-serif" font-size="10">
+  <defs><marker id="c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#475467"/></marker></defs>
+  <g><rect x="4" y="10" width="128" height="98" rx="8" fill="#e8efff" stroke="#1f5bd6"/><text x="68" y="30" text-anchor="middle" font-weight="700" fill="#1f5bd6">1 Preparação</text><text x="68" y="50" text-anchor="middle" font-size="9">trilha security.audit</text><text x="68" y="64" text-anchor="middle" font-size="9">regras de alerta</text><text x="68" y="78" text-anchor="middle" font-size="9">playbooks · plantão</text><text x="68" y="92" text-anchor="middle" font-size="9">simulate-attacks.sh</text></g>
+  <path d="M132,59 L148,59" stroke="#475467" marker-end="url(#c)"/>
+  <g><rect x="150" y="10" width="128" height="98" rx="8" fill="#fff3dc" stroke="#9a5b00"/><text x="214" y="30" text-anchor="middle" font-weight="700" fill="#9a5b00">2 Identificação</text><text x="214" y="50" text-anchor="middle" font-size="9">alerta dispara</text><text x="214" y="64" text-anchor="middle" font-size="9">triagem por IP/usuário</text><text x="214" y="78" text-anchor="middle" font-size="9">correlação request_id</text><text x="214" y="92" text-anchor="middle" font-size="9">classifica severidade</text></g>
+  <path d="M278,59 L294,59" stroke="#475467" marker-end="url(#c)"/>
+  <g><rect x="296" y="10" width="128" height="98" rx="8" fill="#fde9e7" stroke="#b42318"/><text x="360" y="30" text-anchor="middle" font-weight="700" fill="#b42318">3 Contenção</text><text x="360" y="50" text-anchor="middle" font-size="9">deny no gateway</text><text x="360" y="64" text-anchor="middle" font-size="9">bloqueio de contas</text><text x="360" y="78" text-anchor="middle" font-size="9">rotação de segredo</text><text x="360" y="92" text-anchor="middle" font-size="9">preserva evidências</text></g>
+  <path d="M424,59 L440,59" stroke="#475467" marker-end="url(#c)"/>
+  <g><rect x="442" y="10" width="128" height="98" rx="8" fill="#f3f5f9" stroke="#475467"/><text x="506" y="30" text-anchor="middle" font-weight="700" fill="#374151">4 Erradicação</text><text x="506" y="50" text-anchor="middle" font-size="9">causa raiz</text><text x="506" y="64" text-anchor="middle" font-size="9">reset de credenciais</text><text x="506" y="78" text-anchor="middle" font-size="9">correção + regra nova</text><text x="506" y="92" text-anchor="middle" font-size="9">limpeza de histórico</text></g>
+  <path d="M570,59 L586,59" stroke="#475467" marker-end="url(#c)"/>
+  <g><rect x="588" y="10" width="128" height="98" rx="8" fill="#e3f5ec" stroke="#0f7a4a"/><text x="652" y="30" text-anchor="middle" font-weight="700" fill="#0f7a4a">5 Recuperação</text><text x="652" y="50" text-anchor="middle" font-size="9">libera acessos</text><text x="652" y="64" text-anchor="middle" font-size="9">valida (smoke + ataques)</text><text x="652" y="78" text-anchor="middle" font-size="9">vigilância 72 h</text><text x="652" y="92" text-anchor="middle" font-size="9">comunicação LGPD</text></g>
+</svg>
+<figcaption>Figura 6. Fluxo SANS PICERL aplicado ao Ford Zero Touch (a fase de Lições Aprendidas ficou fora do escopo, conforme o enunciado).</figcaption>
+</figure>
+
+<h3>Playbook A: credential stuffing e tomada de conta na API</h3>
+<table>
+  <thead><tr><th style="width:15%">Fase</th><th>Ações concretas no Ford Zero Touch</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Preparação</strong></td><td>Eventos <code>auth.login.*</code> e <code>gateway.access</code> centralizados; alertas "força bruta" e "ataque distribuído" (3.3) ativos; rate limit (5/min por IP) e bloqueio de conta (5 falhas, 15 min) em produção; <code>simulate-attacks.sh</code> usado como simulado periódico do time; responsáveis e canais de plantão definidos.</td></tr>
+    <tr><td><strong>Identificação</strong></td><td>O alerta dispara. O analista agrupa <code>auth.login.failure</code> por <code>source.ip</code> e <code>user.name</code> e procura o sinal de comprometimento: <code>auth.login.success</code> para a mesma conta logo depois de uma série de falhas. Pelo <code>request_id</code> dessa sessão, verifica o que o token acessou (<code>authz.object.denied</code>, alterações críticas). Classifica como incidente se houver login bem-sucedido suspeito.</td></tr>
+    <tr><td><strong>Contenção</strong></td><td>Curto prazo: <code>deny</code> dos IPs ou faixas de origem no Nginx e redução temporária da zona de login. Contas com login suspeito ficam bloqueadas. Os tokens já emitidos expiram em no máximo 15 min; se for preciso invalidá-los na hora, rotaciona-se o <code>JWT_SECRET</code>, o que derruba todas as sessões. Exporta os logs da janela do incidente antes de qualquer mudança (cadeia de custódia).</td></tr>
+    <tr><td><strong>Erradicação</strong></td><td>Reset de senha das contas afetadas; identificação da origem (lista vazada de terceiros); ativação de MFA para os perfis de equipe; revisão se os tokens comprometidos tentaram BOLA ou alteraram jornadas e ordens (eventos <code>journey.*</code>, <code>workorder.*</code>).</td></tr>
+    <tr><td><strong>Recuperação</strong></td><td>Desbloqueio das contas após o reset; smoke test e roteiro de ataques contra o ambiente para confirmar os controles; vigilância reforçada por 72 h com limiares mais baixos; se houve acesso a dados pessoais, comunicação à ANPD e aos titulares em até 3 dias úteis (LGPD art. 48 e Resolução CD/ANPD nº 15/2024).</td></tr>
+  </tbody>
+</table>
+
+<h3>Playbook B: vazamento do segredo de assinatura do JWT</h3>
+<table>
+  <thead><tr><th style="width:15%">Fase</th><th>Ações concretas no Ford Zero Touch</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Preparação</strong></td><td>Segredo nunca versionado (gate Trufflehog, regras Semgrep, <code>${VAR:?}</code>); rotação ensaiada (<code>make env</code> gera segredo novo); <code>jti</code> em todo token para rastrear os que foram usados.</td></tr>
+    <tr><td><strong>Identificação</strong></td><td>Origens possíveis: o gate do pipeline ou o pre-commit acusa o segredo; aparece token válido com claims impossíveis (papel ADMIN para um usuário que não existe no diretório, <code>jti</code> que nunca passou por <code>auth.login.success</code>); ou há pico de <code>auth.token.rejected</code> de tentativas malfeitas.</td></tr>
+    <tr><td><strong>Contenção</strong></td><td>Rotação imediata do <code>JWT_SECRET</code> nos três serviços (<code>docker compose up -d</code> com o novo valor): todo token forjado ou legítimo deixa de valer. Bloqueio da origem no gateway.</td></tr>
+    <tr><td><strong>Erradicação</strong></td><td>Remoção do segredo do histórico (<code>git filter-repo</code>). Em repositório público, a rotação continua obrigatória, porque o histórico pode ter sido clonado. Correção da causa (arquivo, log ou pipeline que expôs o segredo) e nova regra Semgrep se for um padrão novo. Priorizar a migração para RS256, que reduz o raio de impacto.</td></tr>
+    <tr><td><strong>Recuperação</strong></td><td>Usuários refazem login (token de 15 min limita o impacto); monitoramento de <code>auth.token.rejected</code> com o segredo antigo, que indica quem ainda tenta usá-lo; auditoria das alterações críticas feitas no período de exposição.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═════════════════════════════ ETAPA 4 ═════════════════════════════ -->
+<h1><span class="step">Etapa 4 · peso 2,5</span>Pesquisa de vulnerabilidades (OWASP)</h1>
+
+<h2>4.1 Método</h2>
+<p>Mapeamos cada categoria das quatro referências OWASP contra o código real (API, repositório <code>uni-year3-cybersec-sprint3</code>; app mobile Pitlane, commit <code>4dddb2f</code>) e classificamos o estado de cada uma:</p>
+<p><span class="chip ok">Mitigado</span> controle implementado e verificado por teste ou ataque simulado · <span class="chip warn">Parcial</span> controle existe, com risco residual documentado · <span class="chip plan">Planejado</span> não implementado; está no plano de mitigação · <span class="chip na">N/A</span> não se aplica à arquitetura.</p>
+<p>O risco residual é avaliado como <strong>probabilidade × impacto</strong> (1 a 3 cada), resultando em Baixo (1–2), Médio (3–4) ou Alto (6–9).</p>
+
+<h2>4.2 OWASP Top 10:2025</h2>
+<table>
+  <thead><tr><th style="width:20%">Categoria</th><th style="width:30%">Como se aplica ao projeto</th><th>Controles e evidências</th><th style="width:11%">Estado</th></tr></thead>
+  <tbody>
+    <tr><td>A01 Broken Access Control</td><td>Cliente lia dados de outros clientes (BOLA encontrado no baseline)</td><td>RBAC nos 3 serviços; autorização por objeto com <code>customer_id</code>/<code>vins</code>; 404 para recurso alheio; testes e smoke</td><td><span class="chip ok">Mitigado</span></td></tr>
+    <tr><td>A02 Security Misconfiguration</td><td>Portas internas expostas; segredos padrão; cabeçalhos perdidos no 429</td><td>Só o gateway exposto; <code>${VAR:?}</code>; headers; Problem Details sem stack trace; <code>/actuator</code> só para ADMIN. Residual: Swagger público</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>A03 Software Supply Chain Failures</td><td>3 ecossistemas de pacotes + imagens base + actions do CI</td><td>Trivy SCA e imagens; lockfiles (<code>--locked</code>); actions por SHA; imagens por versão. Residual: sem SBOM, assinatura e Dependabot</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>A04 Cryptographic Failures</td><td>VIN em texto puro; chave da Sprint 1 com baixa entropia</td><td>AES-256-GCM + blind index; subchaves derivadas; BCrypt(12); JWT ≥ 256 bits. Residual: sem TLS de ponta a ponta na POC; VIN decifrado no cache Redis</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>A05 Injection</td><td>SQL (JPA, EF Core), NoSQL (Mongo), log</td><td>Consultas parametrizadas pelos ORMs; validação de schema em todas as entradas; <code>request_id</code> saneado contra injeção de log</td><td><span class="chip ok">Mitigado</span></td></tr>
+    <tr><td>A06 Insecure Design</td><td>Controles de negócio (bloqueio, posse, limites físicos)</td><td>Lockout que não revela contas; 404 anti-enumeração; máquina de estados das jornadas e ordens; STRIDE (4.7). Residual: sem MFA</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>A07 Authentication Failures</td><td>Login da API; tokens JWT</td><td>Rate limit + lockout; <code>exp</code> obrigatório; alg allowlist; TTL 15 min; <code>iss</code>/<code>aud</code>. Residual: sem MFA e sem revogação por <code>jti</code>; usuários demo fixos</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>A08 Software or Data Integrity Failures</td><td>Integridade de tokens, dados cifrados, telemetria e pipeline</td><td>Assinatura JWT; tag GCM detecta adulteração; pipeline fixado. Residual: imagem sem assinatura; payload IoT sem HMAC</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>A09 Security Logging and Alerting Failures</td><td>Login sem trilha de auditoria no baseline</td><td>Trilha <code>security.audit</code> em 4 componentes, com <code>request_id</code> e timestamp UTC; alertas definidos. Residual: SIEM não implantado na POC</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>A10 Mishandling of Exceptional Conditions</td><td>Falhas de dependência, entrada inválida, segredo ausente</td><td><em>Fail-closed</em>: sem segredo o serviço não sobe; 500 genérico; circuit breaker e retry com 503 controlado (teste de resiliência)</td><td><span class="chip ok">Mitigado</span></td></tr>
+  </tbody>
+</table>
+
+<h2>4.3 OWASP API Security Top 10:2023</h2>
+<table>
+  <thead><tr><th style="width:24%">Risco</th><th>Análise no Ford Zero Touch</th><th style="width:11%">Estado</th></tr></thead>
+  <tbody>
+    <tr><td>API1 Broken Object Level Authorization</td><td><strong>Encontrado e corrigido</strong> nos 3 serviços (seção 2.6). Detectado por regra Semgrep própria; provado por teste, smoke e ataque simulado.</td><td><span class="chip ok">Mitigado</span></td></tr>
+    <tr><td>API2 Broken Authentication</td><td>Rate limit por IP, lockout por conta, JWT com <code>exp</code> obrigatório, alg allowlist, chave ≥ 256 bits, TTL 15 min. Falta MFA para equipe.</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>API3 Broken Object Property Level Authorization</td><td>Requests são records com campos explícitos (sem mass assignment: o cliente não consegue enviar <code>status</code> na criação); respostas expõem só os campos do domínio, e dados pessoais só ao dono ou à equipe.</td><td><span class="chip ok">Mitigado</span></td></tr>
+    <tr><td>API4 Unrestricted Resource Consumption</td><td>20 req/s por IP, 5 req/min no login, corpo ≤ 1 MB, até 50 códigos de falha por leitura, Redis com <code>maxmemory</code>. Falta cota por usuário ou dispositivo.</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>API5 Broken Function Level Authorization</td><td>Papel exigido por endpoint nos 3 serviços (tabela 2.6); negar por padrão (<code>anyRequest().authenticated()</code>); smoke confere 403 em cada serviço.</td><td><span class="chip ok">Mitigado</span></td></tr>
+    <tr><td>API6 Unrestricted Access to Sensitive Business Flows</td><td>Recomendação e agendamento restritos a ADVISER; telemetria só a VEHICLE. O fluxo de agendamento do app precisará de antiautomação quando for público.</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>API7 Server Side Request Forgery</td><td>Nenhuma URL vem do usuário; o endereço do serviço de inteligência é configuração.</td><td><span class="chip na">N/A</span></td></tr>
+    <tr><td>API8 Security Misconfiguration</td><td>Ver A02: portas, segredos padrão e cabeçalhos corrigidos; Swagger público é o residual.</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>API9 Improper Inventory Management</td><td>OpenAPI dos 3 serviços, versão <code>/api/v1</code> e gateway único como inventário da borda. Falta desligar a documentação pública em produção.</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>API10 Unsafe Consumption of APIs</td><td>Java consome a API de inteligência com timeouts (2 s / 5 s), retry, circuit breaker, validação da resposta e repasse do token do usuário, sem credencial de serviço com privilégio.</td><td><span class="chip ok">Mitigado</span></td></tr>
+  </tbody>
+</table>
+
+<h2>4.4 OWASP Mobile Top 10:2024 (app Pitlane)</h2>
+<p>Análise do código do app (Expo / React Native) no commit <code>4dddb2f</code>, com o Semgrep (rulesets públicos + 4 regras próprias em <code>.semgrep/mobile/</code>) e revisão manual. Os rulesets públicos voltaram a dar 0 achados; as regras próprias encontraram 8 (<code>docs/evidence/mobile/semgrep-pitlane.json</code>). O repositório do app não foi alterado nesta entrega; as correções estão no plano de mitigação.</p>
+<table>
+  <thead><tr><th style="width:22%">Risco</th><th>Situação encontrada no Pitlane</th><th style="width:11%">Estado</th></tr></thead>
+  <tbody>
+    <tr><td>M1 Improper Credential Usage</td><td>Sessão guardada no <strong>SecureStore</strong> (Keychain/Keystore), o que é correto. Porém contas demo com <code>DEMO_PASSWORD</code> fixa vão dentro do APK (6 achados <code>pitlane-demo-credentials-in-bundle</code>).</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>M2 Inadequate Supply Chain Security</td><td>Lockfile npm, CI com typecheck, lint, testes (95% de cobertura) e <code>expo-doctor</code>. Falta SCA das dependências npm no pipeline.</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>M3 Insecure Authentication/Authorization</td><td>Biometria disponível no login; papéis dono × consultor. Comparação de hash com <code>!==</code>, sem tempo constante (<code>pitlane-non-constant-time-hash-compare</code>). Autorização de dados deve ser do backend, que agora aplica posse.</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>M4 Insufficient Input/Output Validation</td><td>Formulários com zod + react-hook-form; variáveis de ambiente validadas por schema.</td><td><span class="chip ok">Mitigado</span></td></tr>
+    <tr><td>M5 Insecure Communication</td><td>A URL da API aceita qualquer esquema, inclusive <code>http://</code> (<code>pitlane-api-url-accepts-cleartext</code>); sem certificate pinning.</td><td><span class="chip plan">Planejado</span></td></tr>
+    <tr><td>M6 Inadequate Privacy Controls</td><td>Pede localização e câmera (QR de check-in) e bloqueia <code>RECORD_AUDIO</code>. Falta tela de consentimento LGPD para telemetria e localização.</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>M7 Insufficient Binary Protections</td><td>Bytecode Hermes, sem ofuscação adicional nem detecção de root/jailbreak.</td><td><span class="chip plan">Planejado</span></td></tr>
+    <tr><td>M8 Security Misconfiguration</td><td><code>android.allowBackup</code> não definido (padrão verdadeiro): o banco local pode ser extraído por backup.</td><td><span class="chip plan">Planejado</span></td></tr>
+    <tr><td>M9 Insecure Data Storage</td><td>App local-first: SQLite com clientes, veículos e agendamentos <strong>sem cifra</strong>. O <code>expo-sqlite</code> suporta SQLCipher.</td><td><span class="chip plan">Planejado</span></td></tr>
+    <tr><td>M10 Insufficient Cryptography</td><td>Senha derivada com <strong>64 rodadas de SHA-256</strong> (<code>pitlane-password-hash-not-a-kdf</code>, ERROR). Hash rápido não é KDF: um dump do SQLite cai em força bruta offline. OWASP recomenda PBKDF2-HMAC-SHA256 com ≥ 600.000 iterações ou Argon2id.</td><td><span class="chip bad">Alto</span></td></tr>
+  </tbody>
+</table>
+
+<h2>4.5 OWASP ASVS 5.0: nível de verificação</h2>
+<p><strong>Nível escolhido: L2.</strong> A solução trata dados pessoais (e-mail, VIN, localização e telemetria que revela hábitos de uso) e opera fluxos de negócio da Ford com as concessionárias. O ASVS recomenda L2 para a maioria das aplicações com esse perfil. L3 fica para sistemas críticos (pagamentos, saúde, segurança veicular embarcada), fora do escopo desta POC.</p>
+<table>
+  <thead><tr><th style="width:24%">Capítulo ASVS 5.0</th><th>Requisitos de L2 verificados no projeto</th><th style="width:11%">Estado</th></tr></thead>
+  <tbody>
+    <tr><td>V1 Encoding and Sanitization</td><td>Consultas parametrizadas; saneamento de valores externos que vão para log (<code>X-Request-ID</code>)</td><td><span class="chip ok">Atende</span></td></tr>
+    <tr><td>V2 Validation and Business Logic</td><td>Validação no servidor de todas as entradas; regras de negócio em máquina de estados; limites contra automação (rate limit, lockout)</td><td><span class="chip ok">Atende</span></td></tr>
+    <tr><td>V4 API and Web Service</td><td>Métodos HTTP adequados, <code>Content-Type</code> explícito (<code>application/problem+json</code>), cabeçalhos de segurança</td><td><span class="chip ok">Atende</span></td></tr>
+    <tr><td>V6 Authentication</td><td>Hash de senha adaptativo (BCrypt 12); proteção contra força bruta; sem credencial padrão em produção (demo só na POC); MFA pendente</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>V7 Session Management</td><td>Sessão stateless com expiração curta (15 min); falta revogação ativa (logout e denylist por <code>jti</code>)</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>V8 Authorization</td><td>Autorização de função e de objeto aplicada no serviço, negada por padrão, com auditoria das negativas</td><td><span class="chip ok">Atende</span></td></tr>
+    <tr><td>V9 Self-contained Tokens</td><td>Assinatura validada com algoritmo em allowlist; <code>exp</code>, <code>iss</code> e <code>aud</code> obrigatórios; chave dedicada e forte</td><td><span class="chip ok">Atende</span></td></tr>
+    <tr><td>V11 Cryptography</td><td>Algoritmos aprovados (AES-256-GCM, HMAC-SHA256), IV por CSPRNG, separação de chaves por propósito, versão para rotação; chave em variável de ambiente (cofre pendente)</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>V12 Secure Communication</td><td>TLS na borda e mTLS entre serviços e no MQTT: <strong>desenhado, não implantado na POC</strong> (gateway em loopback)</td><td><span class="chip plan">Planejado</span></td></tr>
+    <tr><td>V13 Configuration</td><td>Nenhum segredo no código ou na configuração versionada; boot falha sem segredo; stack trace desligado; dependências fixadas</td><td><span class="chip ok">Atende</span></td></tr>
+    <tr><td>V14 Data Protection</td><td>Dado pessoal cifrado em repouso e mascarado em logs; resíduo: cache Redis com a jornada decifrada</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>V15 Secure Coding and Architecture</td><td>SAST, secret scanning e SCA no pipeline; lockfiles; segmentação de rede por fronteira de confiança</td><td><span class="chip ok">Atende</span></td></tr>
+    <tr><td>V16 Security Logging and Error Handling</td><td>Eventos de segurança com quem, o quê, quando e onde; sem dado sensível; erros genéricos; proteção e retenção do log central pendentes</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>V3, V5, V10, V17</td><td>Sem frontend web próprio nesta entrega, sem upload de arquivos, sem OAuth/OIDC próprio (V10 volta ao escopo na integração com o IdP da Ford) e sem WebRTC</td><td><span class="chip na">N/A</span></td></tr>
+  </tbody>
+</table>
+
+<h2>4.6 Riscos residuais e plano de mitigação</h2>
+<div class="two">
+<table>
+  <thead><tr><th style="width:9%">ID</th><th>Risco residual</th><th class="num">P</th><th class="num">I</th><th>Nível</th></tr></thead>
+  <tbody>
+    <tr><td>R1</td><td>Senha do app com hash fraco (M10) + SQLite sem cifra (M9)</td><td class="num">2</td><td class="num">3</td><td><span class="chip bad">Alto 6</span></td></tr>
+    <tr><td>R2</td><td>Tráfego sem TLS de ponta a ponta na POC (V12)</td><td class="num">2</td><td class="num">3</td><td><span class="chip bad">Alto 6</span></td></tr>
+    <tr><td>R3</td><td>Chave HS256 compartilhada pelos 3 serviços</td><td class="num">1</td><td class="num">3</td><td><span class="chip warn">Médio 3</span></td></tr>
+    <tr><td>R4</td><td>Sem revogação de token antes do vencimento</td><td class="num">2</td><td class="num">2</td><td><span class="chip warn">Médio 4</span></td></tr>
+    <tr><td>R5</td><td>VIN decifrado no cache Redis (5 min)</td><td class="num">1</td><td class="num">2</td><td><span class="chip plan">Baixo 2</span></td></tr>
+    <tr><td>R6</td><td>Sem MFA para equipe (ADVISER, ADMIN)</td><td class="num">2</td><td class="num">2</td><td><span class="chip warn">Médio 4</span></td></tr>
+    <tr><td>R7</td><td>Supply chain sem SBOM e sem assinatura de imagem</td><td class="num">1</td><td class="num">3</td><td><span class="chip warn">Médio 3</span></td></tr>
+    <tr><td>R8</td><td>Swagger público e contas demo fixas</td><td class="num">2</td><td class="num">1</td><td><span class="chip plan">Baixo 2</span></td></tr>
+  </tbody>
+</table>
+<div>
+<table>
+  <thead><tr><th style="width:12%">Prior.</th><th>Ação</th><th style="width:14%">Risco</th></tr></thead>
+  <tbody>
+    <tr><td><span class="chip bad">P1</span></td><td>App: PBKDF2 ≥ 600k ou Argon2id; SQLCipher; <code>allowBackup: false</code>; retirar contas demo do build de release</td><td>R1, R8</td></tr>
+    <tr><td><span class="chip bad">P1</span></td><td>TLS na borda (gateway), mTLS entre serviços e no broker MQTT; <code>https</code> obrigatório e pinning no app</td><td>R2</td></tr>
+    <tr><td><span class="chip bad">P1</span></td><td>Denylist de <code>jti</code> no Redis para logout e revogação</td><td>R4</td></tr>
+    <tr><td><span class="chip warn">P2</span></td><td>RS256 com JWKS; segredos em cofre (Azure Key Vault) com rotação trimestral</td><td>R3</td></tr>
+    <tr><td><span class="chip warn">P2</span></td><td>MFA (TOTP) para ADVISER e ADMIN</td><td>R6</td></tr>
+    <tr><td><span class="chip warn">P2</span></td><td>Dependabot, SBOM CycloneDX, assinatura Cosign e política de admissão</td><td>R7</td></tr>
+    <tr><td><span class="chip plan">P3</span></td><td>Cache sem dado pessoal (ou cifrado); Swagger desligado em produção; DAST (OWASP ZAP) no pipeline; SIEM gerenciado</td><td>R5, R8</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<h2>4.7 Complementos: STRIDE, LGPD e segurança contínua</h2>
+<h3>Revisão STRIDE</h3>
+<table>
+  <thead><tr><th style="width:20%">Ameaça</th><th>Exemplo no Ford Zero Touch</th><th style="width:38%">Controle</th></tr></thead>
+  <tbody>
+    <tr><td>Spoofing</td><td>Token forjado; dispositivo IoT falso</td><td>Chave ≥ 256 bits, alg allowlist, papel VEHICLE; mTLS por dispositivo (proposto)</td></tr>
+    <tr><td>Tampering</td><td>Adulterar VIN no banco; telemetria alterada</td><td>Tag GCM; assinatura JWT; validação física das leituras</td></tr>
+    <tr><td>Repudiation</td><td>Consultor nega ter alterado uma jornada</td><td>Alteração crítica registrada com usuário, recurso, estado e <code>request_id</code></td></tr>
+    <tr><td>Information disclosure</td><td>Cliente lendo dados de outro; dump do banco</td><td>Autorização por objeto; AES-256-GCM; 404; e-mail mascarado</td></tr>
+    <tr><td>Denial of service</td><td>Flood no login e na telemetria</td><td>Rate limit, limite de corpo, circuit breaker</td></tr>
+    <tr><td>Elevation of privilege</td><td>Cliente mudando estado de ordem</td><td>RBAC por função, negar por padrão, <code>authz.denied</code> auditado</td></tr>
+  </tbody>
+</table>
+<div class="two">
+<div>
+<h3>LGPD</h3>
+<ul>
+  <li><strong>Dados pessoais tratados:</strong> e-mail, VIN vinculado ao cliente, localização (app) e telemetria que revela hábitos de condução.</li>
+  <li><strong>Segurança (art. 46):</strong> cifra em repouso, controle de acesso por posse e trilha de auditoria.</li>
+  <li><strong>Minimização:</strong> logs sem VIN e sem token, e-mail mascarado; o modelo de ML registra só o resultado.</li>
+  <li><strong>Incidente (art. 48):</strong> Playbook A prevê comunicação à ANPD e aos titulares (Res. CD/ANPD nº 15/2024).</li>
+  <li><strong>Pendente:</strong> consentimento explícito no app e política de retenção da telemetria (a Sprint 1 já tinha um job de anonimização a ser portado).</li>
+</ul>
+</div>
+<div>
+<h3>Plano de segurança contínua</h3>
+<table>
+  <thead><tr><th>Rotina</th><th style="width:30%">Frequência</th></tr></thead>
+  <tbody>
+    <tr><td>Pipeline completo (SAST, segredos, SCA, imagens)</td><td>todo PR + semanal</td></tr>
+    <tr><td>Revisão de dependências (PRs do Dependabot)</td><td>semanal</td></tr>
+    <tr><td>Roteiro <code>simulate-attacks.sh</code> contra o ambiente</td><td>a cada release</td></tr>
+    <tr><td>Auditoria de permissões (matriz 2.6 × usuários reais)</td><td>trimestral</td></tr>
+    <tr><td>Rotação de segredos (JWT, chave de campo, bancos)</td><td>trimestral ou em incidente</td></tr>
+    <tr><td>Backup do Postgres e Mongo, com teste de restauração</td><td>diário · restauração mensal</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<h2>Como reproduzir</h2>
+<pre><code>git clone https://github.com/andrenakarocha/uni-year3-cybersec-sprint3 &amp;&amp; cd uni-year3-cybersec-sprint3
+make hooks                           <span class="c"># ativa o pre-commit (Trufflehog + Semgrep)</span>
+make security                        <span class="c"># Trufflehog no histórico + Semgrep (mesmo comando do CI)</span>
+make up                              <span class="c"># gera .env com segredos aleatórios e sobe a stack</span>
+./scripts/smoke-test.sh              <span class="c"># fluxo completo + checagens de BOLA</span>
+./scripts/security/simulate-attacks.sh   <span class="c"># 6 cenários de ataque</span>
+docker compose logs customer-journey | grep security.audit</code></pre>
+
+</body>
+</html>
