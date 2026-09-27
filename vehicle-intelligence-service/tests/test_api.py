@@ -64,8 +64,9 @@ def test_role_is_enforced(client, telemetry, token):
 
 def test_ingest_and_read_latest_risk(client, telemetry, token):
     created = client.post("/api/v1/telemetry", json=telemetry, headers=headers(token, "VEHICLE"))
+    owner = token("CUSTOMER", vins=[telemetry["vin"]])
     found = client.get(
-        f"/api/v1/vehicles/{telemetry['vin']}/risk", headers=headers(token, "CUSTOMER")
+        f"/api/v1/vehicles/{telemetry['vin']}/risk", headers={"Authorization": f"Bearer {owner}"}
     )
     assert created.status_code == 202
     assert found.status_code == 200

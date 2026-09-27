@@ -54,6 +54,19 @@ public class SecurityAuditLogger {
                 .log("access denied: insufficient role");
     }
 
+    public void objectAccessDenied(String resourceType, Object resourceId, String path, String clientIp) {
+        log.atWarn()
+                .addKeyValue("event.category", "authorization")
+                .addKeyValue("event.action", "authz.object.denied")
+                .addKeyValue("event.outcome", "denied")
+                .addKeyValue("user.name", mask(currentUser()))
+                .addKeyValue("resource.type", resourceType)
+                .addKeyValue("resource.id", String.valueOf(resourceId))
+                .addKeyValue("url.path", path)
+                .addKeyValue("source.ip", clientIp)
+                .log("object access denied: resource belongs to another customer");
+    }
+
     public void criticalChange(String action, String resourceType, Object resourceId, String detail) {
         log.atInfo()
                 .addKeyValue("event.category", "configuration")

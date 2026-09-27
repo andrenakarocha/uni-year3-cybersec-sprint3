@@ -25,14 +25,30 @@ public sealed class WorkOrderApiTests(WorkshopApiFactory factory) : IClassFixtur
     }
 
     private static string Token(string role, bool expired = false, string secret = Secret,
-        string algorithm = SecurityAlgorithms.HmacSha256)
+        string algorithm = SecurityAlgorithms.HmacSha256, params string[] vins)
     {
         var now = DateTime.UtcNow;
+        var claims = new List<Claim> { new("sub", "api-test-user"), new("roles", role) };
+        claims.AddRange(vins.Select(vin => new Claim("vins", vin)));
         return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
             issuer: "ford-zero-touch", audience: "ford-api",
-            claims: new[] { new Claim("sub", "api-test-user"), new Claim("roles", role) },
+            claims: claims,
             notBefore: now.AddHours(-1), expires: expired ? now.AddMinutes(-5) : now.AddHours(1),
             signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), algorithm)));
+    }
+
+    [Fact]
+    public async Task CustomerReadsOnlyWorkOrdersOfOwnVehicles()
+    {
+        using var admin = Client(Token("ADMIN"));
+        var created = await admin.PostAsJsonAsync("/api/v1/work-orders", Payload());
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var owner = Client(Token("CUSTOMER", vins: "1FMCU9GDXMUA12345"));
+        Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync($"/api/v1/work-orders/{id}")).StatusCode);
+
+        using var stranger = Client(Token("CUSTOMER", vins: "1FMCU9GDXMUA00000"));
+        await AssertProblem(await stranger.GetAsync($"/api/v1/work-orders/{id}"), HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -106,7 +122,7 @@ public sealed class WorkOrderApiTests(WorkshopApiFactory factory) : IClassFixtur
         Assert.Equal("Created", body.GetProperty("status").GetString());
         Assert.Equal("Urgent", body.GetProperty("priority").GetString());
 
-        using var customer = Client(Token("CUSTOMER"));
+        using var customer = Client(Token("CUSTOMER", vins: "1FMCU9GDXMUA12345"));
         var found = await customer.GetAsync($"/api/v1/work-orders/{id}");
         Assert.Equal(HttpStatusCode.OK, found.StatusCode);
         Assert.Equal(id, (await found.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());

@@ -79,15 +79,25 @@ check_problem 401 GET /intelligence/api/v1/vehicles/1FMCU9GDXMUA99999/risk
 check_problem 401 GET /workshop/api/v1/work-orders/00000000-0000-0000-0000-000000000000
 
 vin="1FM$(date +%s%N | tail -c 15)"
-customer_id="$(tr -d '\n' </proc/sys/kernel/random/uuid)"
+# Cliente de demonstração (DemoUserDirectory.DEMO_CUSTOMER_ID): a jornada pertence a customer@ford.com.
+customer_id="5b0e7f3c-2a41-4d8e-9c6b-1f2a3b4c5d6e"
 journey_json="$(request_json 201 POST /journey/api/v1/journeys "$adviser_token" \
   "{\"customerId\":\"$customer_id\",\"vin\":\"$vin\"}")"
 journey_id="$(jq -er '.id' <<<"$journey_json")"
 jq -e '.status == "DETECTED"' <<<"$journey_json" >/dev/null
 echo "PASS create journey $journey_id"
+# Token novo: o claim "vins" passa a incluir o veículo recém-vinculado ao cliente.
+customer_token="$(login customer@ford.com)"
 request_json 200 GET "/journey/api/v1/journeys/$journey_id" "$customer_token" |
   jq -e '.status == "DETECTED"' >/dev/null
 echo "PASS warm journey cache before recommendation"
+
+other_vin="1FT$(date +%s%N | tail -c 15)"
+other_journey="$(request_json 201 POST /journey/api/v1/journeys "$adviser_token" \
+  "{\"customerId\":\"$(tr -d '\n' </proc/sys/kernel/random/uuid)\",\"vin\":\"$other_vin\"}" | jq -er '.id')"
+check_problem 404 GET "/journey/api/v1/journeys/$other_journey" "$customer_token"
+check_problem 404 GET "/intelligence/api/v1/vehicles/$other_vin/risk" "$customer_token"
+echo "PASS customer cannot read another customer's journey or vehicle risk (BOLA)"
 
 telemetry="{\"vin\":\"$vin\",\"odometer_km\":42420,\"oil_life_percent\":12,\"battery_voltage\":11.0,\"engine_temperature_c\":120,\"diagnostic_codes\":[\"P0217\",\"P0562\"]}"
 healthy_telemetry="$(jq '.oil_life_percent = 100 | .battery_voltage = 12.6 |

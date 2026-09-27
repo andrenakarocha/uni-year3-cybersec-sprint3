@@ -23,7 +23,7 @@ def client(service: IntelligenceService) -> TestClient:
 
 @pytest.fixture
 def token():
-    def build(*roles: str, expired: bool = False) -> str:
+    def build(*roles: str, expired: bool = False, **claims) -> str:
         now = datetime.now(UTC)
         return jwt.encode(
             {
@@ -33,6 +33,7 @@ def token():
                 "iat": now,
                 "exp": now + (timedelta(seconds=-1) if expired else timedelta(minutes=10)),
                 "roles": list(roles),
+                **claims,
             },
             get_settings().jwt_secret,
             algorithm="HS256",

@@ -1,5 +1,6 @@
 package br.com.fiap.ford.journey.web;
 
+import br.com.fiap.ford.journey.application.JourneyService;
 import br.com.fiap.ford.journey.security.ClientAddress;
 import br.com.fiap.ford.journey.security.DemoUserDirectory;
 import br.com.fiap.ford.journey.security.LoginAttemptGuard;
@@ -28,9 +29,11 @@ class AuthController {
     private final Clock clock;
     private final LoginAttemptGuard attempts;
     private final SecurityAuditLogger audit;
+    private final JourneyService journeys;
 
     AuthController(DemoUserDirectory users, TokenService tokens, Clock clock, LoginAttemptGuard attempts,
-            SecurityAuditLogger audit) {
+            SecurityAuditLogger audit, JourneyService journeys) {
+        this.journeys = journeys;
         this.users = users;
         this.tokens = tokens;
         this.clock = clock;
@@ -56,7 +59,9 @@ class AuthController {
         }
         attempts.reset(username);
         audit.loginSucceeded(username, clientIp);
-        return tokens.issue(user.get().username(), user.get().roles(), clock.instant());
+        var account = user.get();
+        var vins = account.customerId() == null ? java.util.Set.<String>of() : journeys.vinsOwnedBy(account.customerId());
+        return tokens.issue(account.username(), account.roles(), account.customerId(), vins, clock.instant());
     }
 
     record LoginRequest(@Email @NotBlank String username, @NotBlank String password) {}

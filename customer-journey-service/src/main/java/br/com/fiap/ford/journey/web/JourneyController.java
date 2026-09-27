@@ -3,7 +3,11 @@ package br.com.fiap.ford.journey.web;
 import br.com.fiap.ford.journey.application.IntelligencePort;
 import br.com.fiap.ford.journey.application.JourneyService;
 import br.com.fiap.ford.journey.domain.JourneyStatus;
+import br.com.fiap.ford.journey.application.JourneyNotFoundException;
+import br.com.fiap.ford.journey.security.ClientAddress;
+import br.com.fiap.ford.journey.security.Ownership;
 import br.com.fiap.ford.journey.security.SecurityAuditLogger;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,6 +19,8 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,8 +49,15 @@ class JourneyController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('CUSTOMER','ADVISER','ADMIN')")
-    JourneyService.JourneyView find(@PathVariable UUID id) {
-        return service.find(id);
+    JourneyService.JourneyView find(@PathVariable UUID id, @AuthenticationPrincipal Jwt principal,
+            HttpServletRequest request) {
+        var journey = service.find(id);
+        if (!Ownership.canReadCustomerData(principal, journey.customerId())) {
+            audit.objectAccessDenied("customer_journey", id, request.getRequestURI(), ClientAddress.of(request));
+            // 404 e não 403: não confirma a existência de jornadas de outros clientes.
+            throw new JourneyNotFoundException(id);
+        }
+        return journey;
     }
 
     @PostMapping("/{id}/transitions")

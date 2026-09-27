@@ -8,7 +8,9 @@ import br.com.fiap.ford.journey.domain.JourneyStatus;
 import br.com.fiap.ford.journey.domain.VehicleVin;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -65,6 +67,11 @@ public class JourneyService {
         }
         repository.save(journey);
         return RecommendationView.from(result);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<String> vinsOwnedBy(UUID customerId) {
+        return repository.vinsOwnedBy(customerId).stream().map(VehicleVin::value).collect(Collectors.toSet());
     }
 
     private CustomerJourney load(UUID id) {
