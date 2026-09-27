@@ -16,6 +16,7 @@ public sealed class WorkOrdersController(WorkOrderService service) : ControllerB
     public async Task<ActionResult<WorkOrderView>> Create(CreateWorkOrder request, CancellationToken cancellationToken)
     {
         var created = await service.CreateAsync(request, cancellationToken);
+        SecurityAudit.CriticalChange(HttpContext, "workorder.created", created.Id, $"status={created.Status}");
         return CreatedAtAction(nameof(Find), new { id = created.Id }, created);
     }
 
@@ -28,8 +29,12 @@ public sealed class WorkOrdersController(WorkOrderService service) : ControllerB
     [HttpPost("{id:guid}/transitions")]
     [Authorize(Roles = "TECHNICIAN,ADMIN")]
     public async Task<ActionResult<WorkOrderView>> Transition(
-        Guid id, TransitionRequest request, CancellationToken cancellationToken) =>
-        Ok(await service.TransitionAsync(id, request.Target, cancellationToken));
+        Guid id, TransitionRequest request, CancellationToken cancellationToken)
+    {
+        var updated = await service.TransitionAsync(id, request.Target, cancellationToken);
+        SecurityAudit.CriticalChange(HttpContext, "workorder.status.changed", id, $"status={updated.Status}");
+        return Ok(updated);
+    }
 
     public sealed record TransitionRequest(WorkOrderStatus Target);
 }

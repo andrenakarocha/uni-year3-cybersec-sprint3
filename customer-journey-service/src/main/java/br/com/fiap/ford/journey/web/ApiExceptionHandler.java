@@ -3,6 +3,8 @@ package br.com.fiap.ford.journey.web;
 import br.com.fiap.ford.journey.application.JourneyNotFoundException;
 import br.com.fiap.ford.journey.domain.DomainException;
 import br.com.fiap.ford.journey.infra.IntelligenceUnavailableException;
+import br.com.fiap.ford.journey.security.ClientAddress;
+import br.com.fiap.ford.journey.security.SecurityAuditLogger;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
+    private final SecurityAuditLogger audit;
+
+    ApiExceptionHandler(SecurityAuditLogger audit) {
+        this.audit = audit;
+    }
+
     @ExceptionHandler(JourneyNotFoundException.class)
     ProblemDetail notFound(JourneyNotFoundException error, HttpServletRequest request) {
         return problem(HttpStatus.NOT_FOUND, "Journey not found", error.getMessage(), request);
@@ -48,6 +56,8 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     ProblemDetail forbidden(AccessDeniedException error, HttpServletRequest request) {
+        // Negações de @PreAuthorize chegam aqui, não ao AccessDeniedHandler do filtro.
+        audit.accessDenied(request.getMethod(), request.getRequestURI(), ClientAddress.of(request));
         return problem(HttpStatus.FORBIDDEN, "Forbidden", "Insufficient permissions.", request);
     }
 

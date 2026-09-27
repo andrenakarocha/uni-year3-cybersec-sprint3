@@ -36,6 +36,28 @@ public sealed class WorkOrderApiTests(WorkshopApiFactory factory) : IClassFixtur
     }
 
     [Fact]
+    public async Task EchoesSafeRequestIdAndReplacesForgedOne()
+    {
+        using var client = Client();
+        using var safe = new HttpRequestMessage(HttpMethod.Get, "/health");
+        safe.Headers.Add("X-Request-ID", "gw-5f2c9a1e-trace");
+        Assert.Equal("gw-5f2c9a1e-trace", (await client.SendAsync(safe)).Headers.GetValues("X-Request-ID").Single());
+
+        using var forged = new HttpRequestMessage(HttpMethod.Get, "/health");
+        forged.Headers.TryAddWithoutValidation("X-Request-ID", "forged level=ERROR");
+        var replaced = (await client.SendAsync(forged)).Headers.GetValues("X-Request-ID").Single();
+        Assert.DoesNotContain("forged", replaced);
+        Assert.True(Guid.TryParse(replaced, out _));
+    }
+
+    [Fact]
+    public void MasksEmailInAuditTrail()
+    {
+        Assert.Equal("cu***@ford.com", Ford.Workshop.Api.Web.SecurityAudit.Mask("customer@ford.com"));
+        Assert.Equal("***", Ford.Workshop.Api.Web.SecurityAudit.Mask("api-test-user"));
+    }
+
+    [Fact]
     public async Task RejectsTokenSignedWithAlgorithmOutsideAllowlist()
     {
         using var client = Client(Token("ADMIN", algorithm: SecurityAlgorithms.HmacSha384));
