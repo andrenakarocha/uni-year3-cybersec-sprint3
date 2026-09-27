@@ -46,7 +46,7 @@ springdoc:
 security:
   jwt:
     secret: ${JWT_SECRET}
-    ttl: PT1H
+    ttl: PT15M
 
 clients:
   intelligence-url: ${INTELLIGENCE_URL:http://localhost:8000}

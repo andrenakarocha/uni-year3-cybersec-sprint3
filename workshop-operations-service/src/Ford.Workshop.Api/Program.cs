@@ -73,6 +73,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidateAudience = true,
         ValidAudience = "ford-api",
         ValidateLifetime = true,
+        RequireExpirationTime = true,
+        // Aceita só HS256: outro HMAC assinado com a mesma chave também seria aceito sem a allowlist.
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
         RoleClaimType = "roles",

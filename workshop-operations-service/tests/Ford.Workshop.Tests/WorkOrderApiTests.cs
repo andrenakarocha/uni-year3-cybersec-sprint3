@@ -24,14 +24,22 @@ public sealed class WorkOrderApiTests(WorkshopApiFactory factory) : IClassFixtur
         return client;
     }
 
-    private static string Token(string role, bool expired = false, string secret = Secret)
+    private static string Token(string role, bool expired = false, string secret = Secret,
+        string algorithm = SecurityAlgorithms.HmacSha256)
     {
         var now = DateTime.UtcNow;
         return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
             issuer: "ford-zero-touch", audience: "ford-api",
             claims: new[] { new Claim("sub", "api-test-user"), new Claim("roles", role) },
             notBefore: now.AddHours(-1), expires: expired ? now.AddMinutes(-5) : now.AddHours(1),
-            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), SecurityAlgorithms.HmacSha256)));
+            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), algorithm)));
+    }
+
+    [Fact]
+    public async Task RejectsTokenSignedWithAlgorithmOutsideAllowlist()
+    {
+        using var client = Client(Token("ADMIN", algorithm: SecurityAlgorithms.HmacSha384));
+        await AssertProblem(await client.GetAsync($"/api/v1/work-orders/{Guid.NewGuid()}"), HttpStatusCode.Unauthorized);
     }
 
     private static object Payload() => new

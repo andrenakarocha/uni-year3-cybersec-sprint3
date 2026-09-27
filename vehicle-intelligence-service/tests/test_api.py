@@ -1,4 +1,9 @@
+from datetime import UTC, datetime
+
+import jwt
 import pytest
+
+from ford_intelligence.config import get_settings
 
 
 def headers(token, *roles):
@@ -37,6 +42,19 @@ def test_invalid_and_expired_tokens_are_rejected(client, telemetry, token):
     )
     assert_problem(invalid, 401)
     assert_problem(expired, 401)
+
+
+def test_token_without_expiration_is_rejected(client, telemetry):
+    never_expires = jwt.encode(
+        {"sub": "attacker", "iss": "ford-zero-touch", "aud": "ford-api",
+         "iat": datetime.now(UTC), "roles": ["VEHICLE"]},
+        get_settings().jwt_secret,
+        algorithm="HS256",
+    )
+    response = client.post(
+        "/api/v1/telemetry", json=telemetry, headers={"Authorization": f"Bearer {never_expires}"}
+    )
+    assert_problem(response, 401)
 
 
 def test_role_is_enforced(client, telemetry, token):
