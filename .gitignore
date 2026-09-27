@@ -1,0 +1,16 @@
+.env
+**/.gradle/
+**/build/
+**/bin/
+**/obj/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.coverage
+**/coverage.xml
+**/htmlcov/
+**/dist/
+*.log
+.idea/
+.vscode/
+docs/evidence/generated/

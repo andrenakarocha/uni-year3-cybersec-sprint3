@@ -1,0 +1,3 @@
+CREATE DATABASE journey;
+CREATE DATABASE workshop;
+
