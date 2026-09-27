@@ -4,6 +4,7 @@ import br.com.fiap.ford.journey.domain.CustomerJourney;
 import br.com.fiap.ford.journey.domain.JourneyId;
 import br.com.fiap.ford.journey.domain.JourneyStatus;
 import br.com.fiap.ford.journey.domain.VehicleVin;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,7 +19,9 @@ import java.util.UUID;
 class JpaJourneyEntity {
     @Id UUID id;
     UUID customerId;
+    @Convert(converter = EncryptedStringConverter.class)
     String vin;
+    String vinHash;
     @Enumerated(EnumType.STRING) JourneyStatus status;
     String nextAction;
     @Version long version;
@@ -27,11 +30,12 @@ class JpaJourneyEntity {
 
     protected JpaJourneyEntity() {}
 
-    static JpaJourneyEntity from(CustomerJourney journey) {
+    static JpaJourneyEntity from(CustomerJourney journey, String vinHash) {
         JpaJourneyEntity entity = new JpaJourneyEntity();
         entity.id = journey.id().value();
         entity.customerId = journey.customerId();
         entity.vin = journey.vin().value();
+        entity.vinHash = vinHash;
         return entity.updateFrom(journey);
     }
 

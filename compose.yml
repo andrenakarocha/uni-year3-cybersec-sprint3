@@ -31,6 +31,7 @@ services:
       DB_USER: ${POSTGRES_USER:-ford}
       DB_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (make env)}
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env (make env)}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:?defina FIELD_ENCRYPTION_KEY no .env (make env)}
       REDIS_HOST: redis
       INTELLIGENCE_URL: http://vehicle-intelligence:8000
     depends_on:
