@@ -1,0 +1,27 @@
+1. Força bruta contra uma conta (bloqueio após 5 falhas; dura 15 min, estado em memória)
+  ok   senha errada #1 → 401
+  ok   senha errada #2 → 401
+  ok   senha errada #3 → 401
+  ok   senha errada #4 → 401
+  ok   senha errada #5 → 401
+  ok   senha CORRETA com a conta bloqueada → 429
+2. Credential stuffing em rajada (rate limit do gateway, 5 req/min por IP)
+  ok   7 de 12 tentativas barradas no gateway (429)
+  ok   429 do gateway no formato Problem Details
+     aguardando a janela do rate limit (60s) para os próximos cenários...
+3. Token forjado (assinatura inválida) e token sem assinatura (alg=none)
+  ok   assinatura adulterada → 401
+  ok   alg=none no .NET → 401
+4. BOLA: cliente tenta ler a jornada de outro cliente trocando o ID
+  ok   jornada alheia → 404
+  ok   risco de veículo alheio → 404
+  ok   cliente tentando mudar ordem de serviço → 403
+5. Acesso direto aos serviços, contornando o gateway
+  ok   porta 8080 fechada no host
+  ok   porta 8000 fechada no host
+  ok   porta 5000 fechada no host
+6. Dado pessoal em repouso: o que um dump do banco revela
+  v1:TfeymxYlk3iSUnaKKnzxPX9/uSGmUyUMo77aO…|dc54075fd05ede90…
+  v1:jg4DVt2QXaXI54iVGzKa5ugUnu51MTuHxmLUq…|2c4475431da10faa…
+TODOS OS ATAQUES SIMULADOS FORAM BLOQUEADOS
+(technician@ford.com segue bloqueado por 15 min; docker compose restart customer-journey libera)

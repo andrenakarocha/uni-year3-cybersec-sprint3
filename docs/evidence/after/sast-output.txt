@@ -1,0 +1,1 @@
+Semgrep: 0 achado(s) — 0 bloqueante(s) (ERROR)

@@ -1,0 +1,12 @@
+$ git add canary/deploy-key.pem && git commit   # chave privada descartável (canary)
+pre-commit · Trufflehog nos arquivos staged
+🐷🔑🐷  TruffleHog. Unearth your secrets. 🐷🔑🐷
+
+Found unverified result 🐷🔑❓
+Detector Type: PrivateKey
+Decoder Type: PLAIN
+Raw result: [chave redigida]
+File: canary/deploy-key.pem
+Line: 1
+
+pre-commit exit=183
