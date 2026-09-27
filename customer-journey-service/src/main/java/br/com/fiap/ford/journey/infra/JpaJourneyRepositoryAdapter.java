@@ -10,15 +10,17 @@ import org.springframework.stereotype.Repository;
 @Repository
 class JpaJourneyRepositoryAdapter implements JourneyRepository {
     private final SpringDataJourneyRepository repository;
+    private final FieldEncryption encryption;
 
-    JpaJourneyRepositoryAdapter(SpringDataJourneyRepository repository) {
+    JpaJourneyRepositoryAdapter(SpringDataJourneyRepository repository, FieldEncryption encryption) {
         this.repository = repository;
+        this.encryption = encryption;
     }
 
     public CustomerJourney save(CustomerJourney journey) {
         JpaJourneyEntity entity = repository.findById(journey.id().value())
                 .map(existing -> existing.updateFrom(journey))
-                .orElseGet(() -> JpaJourneyEntity.from(journey));
+                .orElseGet(() -> JpaJourneyEntity.from(journey, encryption.blindIndex(journey.vin().value())));
         return repository.save(entity).toDomain();
     }
 
@@ -27,6 +29,6 @@ class JpaJourneyRepositoryAdapter implements JourneyRepository {
     }
 
     public boolean existsActiveByVin(VehicleVin vin) {
-        return repository.existsActiveByVin(vin.value());
+        return repository.existsActiveByVinHash(encryption.blindIndex(vin.value()));
     }
 }

@@ -16,6 +16,7 @@ umask 077
 cat >"$env_file" <<EOF
 # Gerado por scripts/security/generate-env.sh em $(date -u +%FT%TZ). Não versionar.
 JWT_SECRET=$(openssl rand -base64 48 | tr -d '\n')
+FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d '\n')
 POSTGRES_USER=ford
 POSTGRES_PASSWORD=$(password)
 MONGO_USER=ford
