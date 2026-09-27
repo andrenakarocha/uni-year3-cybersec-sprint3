@@ -6,6 +6,11 @@
 #   verified   → credencial ativa confirmada no provedor       → BLOQUEIA
 #   unknown    → detector casou, verificação não foi possível   → BLOQUEIA (na dúvida, trata como real)
 #   unverified → detector casou, provedor recusou a credencial → relatório para triagem
+#
+# Triagem: o detector JDBC é excluído. As URLs JDBC do projeto nunca carregam credencial
+# (usuário/senha entram por DB_USER/DB_PASSWORD), então ele só gera falso positivo "unknown"
+# ("missing host or password"). URLs com credencial embutida seguem cobertas pelos detectores
+# Postgres/MongoDB/URI e pela regra Semgrep ford-secret-fallback-in-config.
 set -euo pipefail
 
 TRUFFLEHOG_IMAGE="${TRUFFLEHOG_IMAGE:-trufflesecurity/trufflehog:3.97.9}"
@@ -14,7 +19,8 @@ reports="$root/reports"
 mkdir -p "$reports"
 
 trufflehog() {
-  docker run --rm -v "$root:/repo" "$TRUFFLEHOG_IMAGE" git file:///repo --no-update "$@"
+  docker run --rm -v "$root:/repo" "$TRUFFLEHOG_IMAGE" git file:///repo --no-update \
+    --exclude-detectors=JDBC "$@"
 }
 
 trufflehog --results=verified,unverified,unknown --json 2>/dev/null >"$reports/trufflehog.json"
