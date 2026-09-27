@@ -1,5 +1,7 @@
 from typing import Protocol
 
+import structlog
+
 from ford_intelligence.domain.models import Recommendation, TelemetryInput
 from ford_intelligence.pipeline.telemetry import TelemetryPipeline
 
@@ -26,6 +28,16 @@ class IntelligenceService:
 
     async def evaluate(self, telemetry: TelemetryInput) -> Recommendation:
         recommendation = self._pipeline.execute(telemetry)
+        # Base das métricas e alertas de ML: distribuição de risco por versão de modelo.
+        # Sem VIN no log (dado pessoal); a correlação é pelo request_id.
+        structlog.get_logger("ml.inference").info(
+            "ml.inference",
+            model_version=recommendation.model_version,
+            risk_level=recommendation.risk_level,
+            risk_score=recommendation.risk_score,
+            action=recommendation.action,
+            reasons=len(recommendation.reasons),
+        )
         await self._repository.save(telemetry, recommendation)
         await self._cache.set(f"risk:{telemetry.vin}", recommendation, 300)
         return recommendation

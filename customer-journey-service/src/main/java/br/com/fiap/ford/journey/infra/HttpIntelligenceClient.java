@@ -6,6 +6,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
+import br.com.fiap.ford.journey.web.RequestIdFilter;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -32,6 +34,10 @@ class HttpIntelligenceClient implements IntelligencePort {
         IntelligenceResponse response = client.post()
                 .uri("/api/v1/recommendations/evaluate")
                 .header(HttpHeaders.AUTHORIZATION, authorizationHeader())
+                .headers(headers -> {
+                    String requestId = MDC.get(RequestIdFilter.MDC_KEY);
+                    if (requestId != null) headers.set(RequestIdFilter.HEADER, requestId);
+                })
                 .body(TelemetryRequest.from(telemetry))
                 .retrieve()
                 .body(IntelligenceResponse.class);

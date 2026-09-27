@@ -1,5 +1,6 @@
 package br.com.fiap.ford.journey.web;
 
+import br.com.fiap.ford.journey.security.ClientAddress;
 import br.com.fiap.ford.journey.security.DemoUserDirectory;
 import br.com.fiap.ford.journey.security.LoginAttemptGuard;
 import br.com.fiap.ford.journey.security.SecurityAuditLogger;
@@ -42,7 +43,7 @@ class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     TokenService.Token token(@Valid @RequestBody LoginRequest request, HttpServletRequest http) {
         String username = request.username().toLowerCase(Locale.ROOT);
-        String clientIp = clientIp(http);
+        String clientIp = ClientAddress.of(http);
         if (attempts.isLocked(username)) {
             audit.loginBlocked(username, clientIp);
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "too many failed attempts, try again later");
@@ -56,13 +57,6 @@ class AuthController {
         attempts.reset(username);
         audit.loginSucceeded(username, clientIp);
         return tokens.issue(user.get().username(), user.get().roles(), clock.instant());
-    }
-
-    // X-Real-IP é sobrescrito pelo gateway. Só é confiável porque os serviços não publicam porta:
-    // todo tráfego chega pelo Nginx (compose.yml).
-    private static String clientIp(HttpServletRequest http) {
-        String forwarded = http.getHeader("X-Real-IP");
-        return forwarded != null && !forwarded.isBlank() ? forwarded : http.getRemoteAddr();
     }
 
     record LoginRequest(@Email @NotBlank String username, @NotBlank String password) {}

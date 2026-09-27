@@ -39,13 +39,16 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter converter,
-            ObjectMapper mapper) throws Exception {
+            ObjectMapper mapper, SecurityAuditLogger audit) throws Exception {
         AuthenticationEntryPoint unauthorized = (request, response, error) -> {
+            audit.tokenRejected(request.getMethod(), request.getRequestURI(), ClientAddress.of(request),
+                    error.getClass().getSimpleName());
             new BearerTokenAuthenticationEntryPoint().commence(request, response, error);
             ApiProblems.write(request, response, mapper, HttpStatus.UNAUTHORIZED,
                     "Unauthorized", "A valid bearer token is required.");
         };
         AccessDeniedHandler forbidden = (request, response, error) -> {
+            audit.accessDenied(request.getMethod(), request.getRequestURI(), ClientAddress.of(request));
             new BearerTokenAccessDeniedHandler().handle(request, response, error);
             ApiProblems.write(request, response, mapper, HttpStatus.FORBIDDEN,
                     "Forbidden", "Insufficient permissions.");
