@@ -1,0 +1,199 @@
+# Regras Semgrep específicas do Ford Zero Touch.
+# As regras públicas (p/security-audit, p/owasp-top-ten, p/secrets...) cobrem padrões genéricos;
+# estas codificam políticas de segurança do projeto que nenhum ruleset público conhece.
+rules:
+  # ── Segredos ────────────────────────────────────────────────────────────────
+  - id: ford-secret-fallback-in-config
+    languages: [generic]
+    paths:
+      include: ["compose.yml", "*.yml", "*.yaml"]
+    # Cobre ${VAR:-valor} (Compose) e ${VAR:valor} (Spring); ${VAR:?erro} é a forma segura.
+    pattern-regex: '\$\{[A-Z0-9_]*(SECRET|PASSWORD|KEY)[A-Z0-9_]*:-?[^?}][^}]*\}'
+    message: >-
+      Segredo com valor padrão embutido (${VAR:-valor} ou ${VAR:valor}). Se a variável não for
+      definida, o serviço sobe com um segredo conhecido publicamente. Use ${VAR:?mensagem} para exigir o valor.
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: ["A07:2021 - Identification and Authentication Failures", "API8:2023 - Security Misconfiguration"]
+
+  - id: ford-secret-default-in-python-settings
+    languages: [python]
+    patterns:
+      - pattern-inside: |
+          class $SETTINGS(BaseSettings):
+            ...
+      - pattern: '$NAME: $TYPE = "$VALUE"'
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: '(?i).*(secret|password|token|api_key).*'
+    message: >-
+      Campo sensível '$NAME' tem valor padrão literal em BaseSettings. O serviço aceita subir sem
+      configuração explícita. Remova o default para que a ausência da variável falhe no boot.
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+
+  - id: ford-secret-in-appsettings
+    languages: [generic]
+    paths:
+      include: ["appsettings*.json"]
+    pattern-either:
+      - pattern-regex: '"(Secret|ApiKey|Password)"\s*:\s*"[^"]+"'
+      - pattern-regex: 'Password=[^;"]+'
+    message: >-
+      Credencial versionada em appsettings. Mova para variável de ambiente ou secret store
+      (Jwt__Secret, ConnectionStrings__Postgres).
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+
+  # ── Superfície de rede ─────────────────────────────────────────────────────
+  - id: ford-internal-service-port-published
+    languages: [yaml]
+    paths:
+      include: ["compose.yml"]
+    patterns:
+      - pattern-inside: |
+          services:
+            ...
+      - pattern-inside: |
+          $SERVICE:
+            ...
+      - pattern: |
+          ports: $PORTS
+      - metavariable-regex:
+          metavariable: $SERVICE
+          regex: '^(customer-journey|vehicle-intelligence|workshop-operations)$'
+    message: >-
+      O serviço interno '$SERVICE' publica porta no host. Requisições diretas ignoram o gateway
+      (rate limit, cabeçalhos de segurança, limite de payload). Exponha apenas o gateway.
+    severity: ERROR
+    metadata:
+      category: security
+      owasp: ["API4:2023 - Unrestricted Resource Consumption", "API8:2023 - Security Misconfiguration"]
+
+  # ── Autorização em nível de objeto (BOLA) ──────────────────────────────────
+  - id: ford-customer-read-without-ownership-check-java
+    languages: [java]
+    patterns:
+      - pattern: |
+          @PreAuthorize("$ROLES")
+          $RET $METHOD(..., @PathVariable $TYPE $ID, ...) { ... }
+      - metavariable-regex:
+          metavariable: $ROLES
+          regex: ".*'CUSTOMER'.*"
+      - pattern-not: |
+          @PreAuthorize("$ROLES")
+          $RET $METHOD(..., @AuthenticationPrincipal $P $PRINCIPAL, ...) { ... }
+    message: >-
+      Endpoint acessível ao papel CUSTOMER busca recurso por ID sem receber o principal autenticado.
+      Qualquer cliente lê recursos de outros clientes trocando o ID (BOLA). Receba
+      @AuthenticationPrincipal e valide a posse do recurso.
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-639: Authorization Bypass Through User-Controlled Key"
+      owasp: ["API1:2023 - Broken Object Level Authorization", "A01:2021 - Broken Access Control"]
+
+  - id: ford-customer-read-without-ownership-check-python
+    languages: [python]
+    patterns:
+      - pattern: |
+          @router.$VERB($PATH, ...)
+          async def $HANDLER(..., $ARG: $T = Depends(require_roles(..., "CUSTOMER", ...)), ...):
+            ...
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: '.*\{.*\}.*'
+      - metavariable-regex:
+          metavariable: $ARG
+          regex: '^_$'
+    message: >-
+      Rota com parâmetro de caminho acessível ao papel CUSTOMER descarta o principal ('_').
+      Sem o principal não há como validar a posse do veículo (BOLA).
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-639: Authorization Bypass Through User-Controlled Key"
+      owasp: ["API1:2023 - Broken Object Level Authorization"]
+
+  - id: ford-customer-read-without-ownership-check-csharp
+    languages: [csharp]
+    patterns:
+      - pattern: |
+          [Authorize(Roles = "$ROLES")]
+          public $RET $METHOD(Guid $ID, ...) => $BODY;
+      - metavariable-regex:
+          metavariable: $ROLES
+          regex: '.*CUSTOMER.*'
+      - pattern-not: |
+          [Authorize(Roles = "$ROLES")]
+          public $RET $METHOD(Guid $ID, ...) => <... User ...>;
+    message: >-
+      Ação acessível ao papel CUSTOMER busca recurso por ID sem consultar o usuário autenticado
+      (User). Qualquer cliente lê ordens de serviço de outros clientes trocando o ID (BOLA).
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-639: Authorization Bypass Through User-Controlled Key"
+      owasp: ["API1:2023 - Broken Object Level Authorization"]
+
+  # ── Criptografia de dados pessoais ─────────────────────────────────────────
+  - id: ford-pii-column-without-encryption
+    languages: [java]
+    patterns:
+      - pattern-inside: |
+          @Entity
+          class $ENTITY { ... }
+      - pattern: String $FIELD;
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: '(?i)^(vin|cpf|email|phone|fullName|address)$'
+      - pattern-not: |
+          @Convert(...)
+          String $FIELD;
+    message: >-
+      Dado pessoal '$FIELD' persistido em texto puro. Pela LGPD, o VIN vinculado a um cliente é
+      dado pessoal. Cifre com @Convert(converter = EncryptedStringConverter.class).
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-312: Cleartext Storage of Sensitive Information"
+      owasp: ["A02:2021 - Cryptographic Failures"]
+
+  # ── Autenticação e trilha de auditoria ─────────────────────────────────────
+  - id: ford-login-without-security-audit
+    languages: [java]
+    patterns:
+      - pattern: |
+          @PostMapping("/token")
+          $RET $METHOD(...) { ... }
+      - pattern-not: |
+          @PostMapping("/token")
+          $RET $METHOD(...) { ... $AUDIT.loginFailed(...); ... }
+    message: >-
+      Endpoint de login não registra tentativas falhas na trilha de segurança. Sem esse evento não
+      há detecção de força bruta nem credential stuffing.
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-778: Insufficient Logging"
+      owasp: ["A09:2021 - Security Logging and Monitoring Failures"]
+
+  - id: ford-jwt-access-token-too-long
+    languages: [generic]
+    paths:
+      include: ["application*.yml"]
+    pattern-regex: 'ttl:\s*PT([1-9]\d*H|([3-9]\d|[1-9]\d{2,})M)'
+    message: >-
+      Access token com validade de 30 minutos ou mais. Sem revogação, um token vazado vale até
+      expirar. Use TTL curto (15 min) com identificador único (jti).
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-613: Insufficient Session Expiration"
+      owasp: ["API2:2023 - Broken Authentication"]
