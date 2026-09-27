@@ -1,6 +1,6 @@
-.PHONY: up down build test smoke resilience verify logs clean security sast secrets hooks
+.PHONY: up down build test smoke resilience verify logs clean security sast secrets hooks env
 
-up:
+up: .env
 	docker compose up --build -d
 	docker compose restart gateway
 
@@ -43,3 +43,8 @@ secrets:
 
 hooks:
 	git config core.hooksPath .githooks
+
+env: .env
+
+.env:
+	./scripts/security/generate-env.sh

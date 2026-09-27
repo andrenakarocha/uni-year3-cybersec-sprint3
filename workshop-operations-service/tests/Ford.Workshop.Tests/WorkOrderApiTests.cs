@@ -15,7 +15,7 @@ namespace Ford.Workshop.Tests;
 
 public sealed class WorkOrderApiTests(WorkshopApiFactory factory) : IClassFixture<WorkshopApiFactory>
 {
-    private const string Secret = "zero-touch-development-secret-change-before-production-0123456789abcdef";
+    private const string Secret = WorkshopApiFactory.JwtSecret;
 
     private HttpClient Client(string? token = null)
     {
