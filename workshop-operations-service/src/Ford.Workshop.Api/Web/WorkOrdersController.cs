@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Ford.Workshop.Api.Application;
 using Ford.Workshop.Api.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -23,8 +24,24 @@ public sealed class WorkOrdersController(WorkOrderService service) : ControllerB
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "CUSTOMER,ADVISER,TECHNICIAN,ADMIN")]
     [ProducesResponseType<WorkOrderView>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<WorkOrderView>> Find(Guid id, CancellationToken cancellationToken) =>
-        Ok(await service.FindAsync(id, cancellationToken));
+    public async Task<ActionResult<WorkOrderView>> Find(Guid id, CancellationToken cancellationToken)
+    {
+        var workOrder = await service.FindAsync(id, cancellationToken);
+        if (!CanRead(User, workOrder.Vin))
+        {
+            SecurityAudit.ObjectAccessDenied(HttpContext, id);
+            // 404 e não 403: não confirma a existência de ordens de outros clientes.
+            throw new WorkOrderNotFoundException(id);
+        }
+        return Ok(workOrder);
+    }
+
+    // OWASP API1:2023 (BOLA): equipe atende qualquer veículo; CUSTOMER só os do claim "vins".
+    private static readonly string[] StaffRoles = ["ADVISER", "TECHNICIAN", "ADMIN"];
+
+    private static bool CanRead(ClaimsPrincipal user, string vin) =>
+        StaffRoles.Any(user.IsInRole)
+        || user.FindAll("vins").Any(claim => string.Equals(claim.Value, vin, StringComparison.OrdinalIgnoreCase));
 
     [HttpPost("{id:guid}/transitions")]
     [Authorize(Roles = "TECHNICIAN,ADMIN")]

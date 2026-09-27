@@ -1,11 +1,12 @@
 from http import HTTPStatus
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from ford_intelligence.api.problems import ProblemDetails
 from ford_intelligence.application.services import IntelligenceService
 from ford_intelligence.domain.models import Recommendation, TelemetryInput
-from ford_intelligence.security import Principal, require_roles
+from ford_intelligence.security import Principal, client_ip, require_roles
 
 router = APIRouter(
     prefix="/api/v1",
@@ -44,9 +45,23 @@ async def evaluate(
 @router.get("/vehicles/{vin}/risk", response_model=Recommendation)
 async def latest_risk(
     vin: str,
-    _: Principal = Depends(require_roles("CUSTOMER", "ADVISER", "ADMIN", "SERVICE")),
+    request: Request,
+    principal: Principal = Depends(require_roles("CUSTOMER", "ADVISER", "ADMIN", "SERVICE")),
     service: IntelligenceService = Depends(get_service),
 ) -> Recommendation:
+    if not principal.can_read_vehicle(vin):
+        structlog.get_logger("security.audit").warning(
+            "authz.object.denied",
+            **{
+                "event.category": "authorization",
+                "event.outcome": "denied",
+                "resource.type": "vehicle_risk",
+                "url.path": request.url.path,
+                "source.ip": client_ip(request),
+            },
+        )
+        # 404 e não 403: não confirma que o veículo de outro cliente existe.
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="vehicle risk not found")
     result = await service.latest(vin)
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="vehicle risk not found")

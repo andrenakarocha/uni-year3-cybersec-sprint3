@@ -19,15 +19,10 @@ from ford_intelligence.infrastructure.repositories import (
     RedisRecommendationCache,
 )
 from ford_intelligence.pipeline.telemetry import TelemetryPipeline
+from ford_intelligence.security import client_ip
 
 # X-Request-ID vem do gateway; valor fora do formato é trocado para não permitir injeção de log.
 SAFE_REQUEST_ID = re.compile(r"[A-Za-z0-9-]{8,64}")
-
-
-def client_ip(request: Request) -> str:
-    # X-Real-IP é sobrescrito pelo gateway; confiável porque o serviço não publica porta.
-    fallback = request.client.host if request.client else "unknown"
-    return request.headers.get("x-real-ip") or fallback
 
 
 def create_app(service: IntelligenceService | None = None) -> FastAPI:

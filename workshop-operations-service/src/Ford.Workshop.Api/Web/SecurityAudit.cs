@@ -26,6 +26,12 @@ public static partial class SecurityAudit
             "authz.denied", "authorization", "denied", UserName(context),
             context.Request.Method, context.Request.Path.Value, SourceIp(context));
 
+    public static void ObjectAccessDenied(HttpContext context, Guid resourceId) =>
+        Logger(context).LogWarning(
+            "{EventAction} {EventCategory} {EventOutcome} {UserName} {ResourceType} {ResourceId} {UrlPath} {SourceIp}",
+            "authz.object.denied", "authorization", "denied", UserName(context), "work_order", resourceId,
+            context.Request.Path.Value, SourceIp(context));
+
     public static void CriticalChange(HttpContext context, string action, Guid resourceId, string detail) =>
         Logger(context).LogInformation(
             "{EventAction} {EventCategory} {EventOutcome} {UserName} {ResourceType} {ResourceId} {ChangeDetail}",

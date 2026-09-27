@@ -23,18 +23,25 @@ public class TokenService {
     }
 
     public Token issue(String subject, Set<String> roles, Instant now) {
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        return issue(subject, roles, null, Set.of(), now);
+    }
+
+    /** customer_id e vins são os claims de posse que os três serviços usam contra BOLA. */
+    public Token issue(String subject, Set<String> roles, UUID customerId, Set<String> vins, Instant now) {
+        JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
                 .issuer("ford-zero-touch")
                 .audience(java.util.List.of("ford-api"))
                 .subject(subject)
                 .id(UUID.randomUUID().toString()) // jti: rastreia o token nos logs e permite revogação pontual
                 .issuedAt(now)
                 .expiresAt(now.plus(ttl))
-                .claim("roles", roles)
-                .build();
+                .claim("roles", roles);
+        if (customerId != null) {
+            claims.claim("customer_id", customerId.toString()).claim("vins", vins);
+        }
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
         return new Token(
-                encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue(), ttl.toSeconds());
+                encoder.encode(JwtEncoderParameters.from(header, claims.build())).getTokenValue(), ttl.toSeconds());
     }
 
     public record Token(String accessToken, long expiresIn) {}

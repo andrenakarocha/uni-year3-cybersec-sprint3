@@ -4,7 +4,9 @@ import br.com.fiap.ford.journey.domain.CustomerJourney;
 import br.com.fiap.ford.journey.domain.JourneyId;
 import br.com.fiap.ford.journey.domain.JourneyRepository;
 import br.com.fiap.ford.journey.domain.VehicleVin;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -26,6 +28,10 @@ class JpaJourneyRepositoryAdapter implements JourneyRepository {
 
     public Optional<CustomerJourney> findById(JourneyId id) {
         return repository.findById(id.value()).map(JpaJourneyEntity::toDomain);
+    }
+
+    public List<VehicleVin> vinsOwnedBy(UUID customerId) {
+        return repository.findByCustomerId(customerId).stream().map(entity -> entity.toDomain().vin()).toList();
     }
 
     public boolean existsActiveByVin(VehicleVin vin) {

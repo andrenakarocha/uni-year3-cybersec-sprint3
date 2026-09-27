@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.com.fiap.ford.journey.application.IntelligencePort;
 import br.com.fiap.ford.journey.infra.IntelligenceUnavailableException;
+import br.com.fiap.ford.journey.security.DemoUserDirectory;
 import br.com.fiap.ford.journey.security.TokenService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,7 +48,7 @@ class JourneyApiTest {
     void exposesPublicTokenAndProtectedResourceFlow() throws Exception {
         String admin = token("admin@ford.com");
         String customer = token("customer@ford.com");
-        UUID customerId = UUID.randomUUID();
+        UUID customerId = DemoUserDirectory.DEMO_CUSTOMER_ID;
         String payload = "{\"customerId\":\"" + customerId + "\",\"vin\":\"1FMCU9GDXMUA12345\"}";
 
         mvc.perform(post("/api/v1/journeys").contentType(MediaType.APPLICATION_JSON).content(payload))
