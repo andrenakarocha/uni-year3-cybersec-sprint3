@@ -1,0 +1,57 @@
+# Regras para o app mobile Pitlane (Expo/React Native, repositório próprio).
+# Rodadas contra o código do app para o mapeamento OWASP Mobile Top 10 (2024); entram no
+# pipeline do repositório mobile no mesmo formato de .semgrep/ford-rules.yml.
+rules:
+  - id: pitlane-password-hash-not-a-kdf
+    languages: [typescript]
+    patterns:
+      - pattern-inside: |
+          class $HASHER implements PasswordHasher { ... }
+      - pattern: this.crypto.sha256Hex(...)
+    message: >-
+      Senha derivada com SHA-256 iterado. Hash rápido não é função de derivação de senha: com poucas
+      iterações, um dump do SQLite do aparelho cai em força bruta offline. Use PBKDF2-HMAC-SHA256
+      (>= 600.000 iterações, OWASP) ou Argon2id, e deixe a verificação de senha no backend.
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-916: Use of Password Hash With Insufficient Computational Effort"
+      owasp-mobile: "M10:2024 - Insufficient Cryptography"
+
+  - id: pitlane-non-constant-time-hash-compare
+    languages: [typescript]
+    pattern-either:
+      - pattern: $HASH !== $USER.passwordHash
+      - pattern: $HASH === $USER.passwordHash
+    message: >-
+      Comparação de hash de senha com ===/!==, que retorna no primeiro byte diferente. Use comparação
+      em tempo constante.
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-208: Observable Timing Discrepancy"
+      owasp-mobile: "M3:2024 - Insecure Authentication/Authorization"
+
+  - id: pitlane-api-url-accepts-cleartext
+    languages: [typescript]
+    pattern: "EXPO_PUBLIC_API_URL: z.preprocess($F, z.url().optional())"
+    message: >-
+      A URL da API aceita qualquer esquema, inclusive http://. Exija https (z.url().startsWith("https://"))
+      e considere certificate pinning para a API de pós-venda.
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-319: Cleartext Transmission of Sensitive Information"
+      owasp-mobile: "M5:2024 - Insecure Communication"
+
+  - id: pitlane-demo-credentials-in-bundle
+    languages: [typescript]
+    pattern: "password: DEMO_PASSWORD"
+    message: >-
+      Contas de demonstração com senha fixa vão dentro do APK (seed local). Aceitável em POC; em
+      produção as contas vêm do backend e o seed de demo sai do build de release.
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp-mobile: "M1:2024 - Improper Credential Usage"
