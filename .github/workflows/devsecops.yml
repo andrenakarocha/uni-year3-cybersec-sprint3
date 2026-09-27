@@ -1,0 +1,203 @@
+# Pipeline DevSecOps — Ford Zero Touch
+#
+#   commit / PR
+#     ├─▶ [1] Gates de segurança   secrets (Trufflehog) · sast (Semgrep)          ┐ em paralelo;
+#     │                            bloqueiam: segredo verified/unknown, SAST ERROR │ falha em
+#     └─▶ [2] Build & testes       java · python · dotnet (JWT real, RBAC, erros)  ┘ qualquer um
+#                                                                                   │ barra o merge
+#           [3] Supply chain       sca · container · iac (Trivy)  ◀── só roda com [1] e [2] verdes
+#                                  informativo nesta POC: HIGH/CRITICAL vão para a aba Security
+#
+# Os scans de [1] rodam os mesmos scripts do dev (scripts/security/*.sh e .githooks/pre-commit).
+# Actions fixadas por SHA e imagens por versão: o próprio pipeline é superfície de supply chain.
+name: devsecops
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 9 * * 1" # segunda 06:00 BRT: CVEs novas aparecem mesmo sem commit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devsecops-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.74.0
+
+jobs:
+  # ── [1] Gates de segurança ────────────────────────────────────────────────
+  secrets:
+    name: "1 · secrets (Trufflehog)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # histórico completo: segredo apagado depois continua vazado
+      - name: Trufflehog — histórico git completo
+        run: ./scripts/security/secret-scan.sh
+      - name: Resumo
+        if: always()
+        run: |
+          {
+            echo "## Trufflehog"
+            echo "| Resultado | Detector | Arquivo | Commit |"
+            echo "|---|---|---|---|"
+            jq -rs '.[] | "| \(if .Verified then "**VERIFIED**" else "unverified" end) | \(.DetectorName) | `\(.SourceMetadata.Data.Git.file):\(.SourceMetadata.Data.Git.line)` | \(.SourceMetadata.Data.Git.commit[0:7]) |"' reports/trufflehog.json
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: trufflehog-report
+          path: reports/trufflehog.json
+
+  sast:
+    name: "1 · SAST (Semgrep)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write # publica o SARIF na aba Security → Code scanning
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Semgrep — rulesets públicos + regras Ford (.semgrep/)
+        run: ./scripts/security/sast.sh
+      - name: Resumo
+        if: always()
+        run: |
+          {
+            echo "## Semgrep"
+            echo "| Severidade | Regra | Local |"
+            echo "|---|---|---|"
+            jq -r '.results[] | "| \(.extra.severity) | \(.check_id | split(".") | last) | `\(.path):\(.start.line)` |"' reports/semgrep.json
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        if: always()
+        with:
+          sarif_file: reports/semgrep.sarif
+          category: semgrep
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: semgrep-report
+          path: reports/semgrep.*
+
+  # ── [2] Build & testes ─────────────────────────────────────────────────────
+  test-java:
+    name: "2 · test customer-journey (Java)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: customer-journey-service
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - run: ./gradlew test --no-daemon
+
+  test-python:
+    name: "2 · test vehicle-intelligence (Python)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: vehicle-intelligence-service
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - run: uv sync --all-groups --locked
+      - run: uv run ruff check .
+      - run: uv run pytest
+
+  test-dotnet:
+    name: "2 · test workshop-operations (.NET)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "8.0.x"
+      - run: dotnet test workshop-operations-service/Ford.Workshop.sln --configuration Release
+
+  # ── [3] Supply chain (informativo) ─────────────────────────────────────────
+  sca:
+    name: "3 · SCA dependências (Trivy)"
+    needs: [secrets, sast, test-java, test-python, test-dotnet]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Trivy fs — gradle.lockfile, uv.lock
+        run: |
+          mkdir -p reports
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" fs --scanners vuln \
+            --severity HIGH,CRITICAL --format sarif --output reports/trivy-sca.sarif .
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" fs --scanners vuln \
+            --severity HIGH,CRITICAL --format table . | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: reports/trivy-sca.sarif
+          category: trivy-sca
+
+  container:
+    name: "3 · container ${{ matrix.service }} (Trivy)"
+    needs: [secrets, sast, test-java, test-python, test-dotnet]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [customer-journey-service, vehicle-intelligence-service, workshop-operations-service]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker build -t "ford/${{ matrix.service }}:${{ github.sha }}" "${{ matrix.service }}"
+      - name: Trivy image — SO + dependências empacotadas
+        run: |
+          mkdir -p reports
+          image="ford/${{ matrix.service }}:${{ github.sha }}"
+          trivy() { docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src "$TRIVY_IMAGE" "$@"; }
+          trivy image --severity HIGH,CRITICAL --format sarif --output "reports/trivy-${{ matrix.service }}.sarif" "$image"
+          trivy image --severity HIGH,CRITICAL --format table "$image" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: reports/trivy-${{ matrix.service }}.sarif
+          category: trivy-image-${{ matrix.service }}
+
+  iac:
+    name: "3 · IaC Dockerfiles (Trivy)"
+    needs: [secrets, sast, test-java, test-python, test-dotnet]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Trivy config — boas práticas de Dockerfile
+        run: |
+          mkdir -p reports
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" config --severity MEDIUM,HIGH,CRITICAL \
+            --format sarif --output reports/trivy-config.sarif .
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" config --severity MEDIUM,HIGH,CRITICAL \
+            --format table . | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: reports/trivy-config.sarif
+          category: trivy-config
