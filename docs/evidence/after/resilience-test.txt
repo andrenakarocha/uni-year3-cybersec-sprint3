@@ -1,0 +1,29 @@
+PASS all services running before fault injection
+PASS create and read DETECTED journey before dependency failure
+ Container ford-zero-touch-vehicle-intelligence-1 Stopping 
+ Container ford-zero-touch-vehicle-intelligence-1 Stopped 
+PASS real Python container stopped
+PASS dependency failure 1 returns 503 Problem Details
+PASS dependency failure 2 returns 503 Problem Details
+PASS dependency failure 3 returns 503 Problem Details
+PASS dependency failure 4 returns 503 Problem Details
+PASS dependency failure 5 returns 503 Problem Details
+PASS persisted journey unchanged after failures; workshop remains available
+ Container ford-zero-touch-redis-1 Waiting 
+ Container ford-zero-touch-mongo-1 Waiting 
+ Container ford-zero-touch-mongo-1 Healthy 
+ Container ford-zero-touch-redis-1 Healthy 
+ Container ford-zero-touch-vehicle-intelligence-1 Starting 
+ Container ford-zero-touch-vehicle-intelligence-1 Started 
+ Container ford-zero-touch-mongo-1 Waiting 
+ Container ford-zero-touch-redis-1 Waiting 
+ Container ford-zero-touch-vehicle-intelligence-1 Waiting 
+ Container ford-zero-touch-redis-1 Healthy 
+ Container ford-zero-touch-mongo-1 Healthy 
+ Container ford-zero-touch-vehicle-intelligence-1 Healthy 
+ Container ford-zero-touch-gateway-1 Restarting 
+ Container ford-zero-touch-gateway-1 Started 
+PASS Python restored and gateway refreshed
+PASS recommendation succeeds after dependency recovery
+PASS stable recovery, persisted recommendation and updated journey cache
+ALL RESILIENCE TESTS PASSED
