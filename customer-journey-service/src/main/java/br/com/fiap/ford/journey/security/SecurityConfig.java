@@ -4,6 +4,8 @@ import br.com.fiap.ford.journey.web.ApiProblems;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Objects;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtClaimValidator;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -36,13 +39,16 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter converter,
-            ObjectMapper mapper) throws Exception {
+            ObjectMapper mapper, SecurityAuditLogger audit) throws Exception {
         AuthenticationEntryPoint unauthorized = (request, response, error) -> {
+            audit.tokenRejected(request.getMethod(), request.getRequestURI(), ClientAddress.of(request),
+                    error.getClass().getSimpleName());
             new BearerTokenAuthenticationEntryPoint().commence(request, response, error);
             ApiProblems.write(request, response, mapper, HttpStatus.UNAUTHORIZED,
                     "Unauthorized", "A valid bearer token is required.");
         };
         AccessDeniedHandler forbidden = (request, response, error) -> {
+            audit.accessDenied(request.getMethod(), request.getRequestURI(), ClientAddress.of(request));
             new BearerTokenAccessDeniedHandler().handle(request, response, error);
             ApiProblems.write(request, response, mapper, HttpStatus.FORBIDDEN,
                     "Forbidden", "Insufficient permissions.");
@@ -66,7 +72,12 @@ class SecurityConfig {
 
     @Bean
     SecretKey jwtKey(@Value("${security.jwt.secret}") String secret) {
-        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        byte[] key = secret.getBytes(StandardCharsets.UTF_8);
+        // HS256 exige chave de no mínimo 256 bits (RFC 7518 §3.2); chave curta cai em força bruta offline.
+        if (key.length < 32) {
+            throw new IllegalStateException("security.jwt.secret must have at least 256 bits");
+        }
+        return new SecretKeySpec(key, "HmacSHA256");
     }
 
     @Bean
@@ -79,6 +90,8 @@ class SecurityConfig {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
                 JwtValidators.createDefaultWithIssuer("ford-zero-touch"),
+                // O validador padrão só confere exp se o claim existir: token sem exp valeria para sempre.
+                new JwtClaimValidator<Instant>(JwtClaimNames.EXP, Objects::nonNull),
                 new JwtClaimValidator<java.util.List<String>>("aud",
                         audience -> audience != null && audience.contains("ford-api"))));
         return decoder;

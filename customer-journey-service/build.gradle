@@ -16,6 +16,13 @@ repositories { mavenCentral() }
 
 dependencyLocking { lockAllConfigurations() }
 
+// SCA (Trivy): o Spring Boot 3.5.16 traz Tomcat 10.1.55, Netty 4.1.135 e pgjdbc 42.7.11, com CVEs
+// críticas e altas já corrigidas upstream. Fixa o patch mais recente de cada linha (>= versão corrigida)
+// até um patch do Boot absorvê-los.
+ext['tomcat.version'] = '10.1.60'
+ext['netty.version'] = '4.1.138.Final'
+ext['postgresql.version'] = '42.7.13'
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-cache'

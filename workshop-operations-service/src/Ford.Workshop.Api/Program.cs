@@ -12,7 +12,13 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
-builder.Logging.AddJsonConsole();
+builder.Logging.AddJsonConsole(options =>
+{
+    // Escopos levam o request_id; timestamp UTC é indispensável para a linha do tempo de um incidente.
+    options.IncludeScopes = true;
+    options.UseUtcTimestamp = true;
+    options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+});
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
     .ConfigureApiBehaviorOptions(options =>
@@ -60,6 +66,9 @@ builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 
 var secret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT secret is required");
+// HS256 exige chave de no mínimo 256 bits (RFC 7518 §3.2).
+if (Encoding.UTF8.GetByteCount(secret) < 32)
+    throw new InvalidOperationException("JWT secret must have at least 256 bits");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.MapInboundClaims = false;
@@ -70,15 +79,42 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidateAudience = true,
         ValidAudience = "ford-api",
         ValidateLifetime = true,
+        RequireExpirationTime = true,
+        // Aceita só HS256: outro HMAC assinado com a mesma chave também seria aceito sem a allowlist.
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
         RoleClaimType = "roles",
         ClockSkew = TimeSpan.FromSeconds(30)
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = context =>
+        {
+            SecurityAudit.TokenRejected(context.HttpContext, context.AuthenticateFailure?.GetType().Name ?? "MissingToken");
+            return Task.CompletedTask;
+        },
+        OnForbidden = context =>
+        {
+            SecurityAudit.AccessDenied(context.HttpContext);
+            return Task.CompletedTask;
+        }
+    };
 });
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+// Correlação: request_id do gateway entra no escopo de todo log desta requisição.
+app.Use(async (context, next) =>
+{
+    var incoming = context.Request.Headers[SecurityAudit.RequestIdHeader].ToString();
+    var requestId = SecurityAudit.SafeRequestId().IsMatch(incoming) ? incoming : Guid.NewGuid().ToString();
+    context.Response.Headers[SecurityAudit.RequestIdHeader] = requestId;
+    using (app.Logger.BeginScope(new Dictionary<string, object> { ["request_id"] = requestId }))
+    {
+        await next(context);
+    }
+});
 app.UseExceptionHandler();
 app.UseStatusCodePages(context =>
 {

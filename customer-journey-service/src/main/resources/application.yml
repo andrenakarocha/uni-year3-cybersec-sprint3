@@ -4,7 +4,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/journey}
     username: ${DB_USER:ford}
-    password: ${DB_PASSWORD:ford_local_only}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -45,8 +45,10 @@ springdoc:
 
 security:
   jwt:
-    secret: ${JWT_SECRET:zero-touch-development-secret-change-before-production-0123456789abcdef}
-    ttl: PT1H
+    secret: ${JWT_SECRET}
+    ttl: PT15M
+  field-encryption:
+    key: ${FIELD_ENCRYPTION_KEY}
 
 clients:
   intelligence-url: ${INTELLIGENCE_URL:http://localhost:8000}

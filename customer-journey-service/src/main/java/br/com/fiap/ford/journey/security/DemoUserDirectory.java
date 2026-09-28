@@ -3,11 +3,15 @@ package br.com.fiap.ford.journey.security;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DemoUserDirectory {
+    /** Cliente de demonstração: dono das jornadas criadas com este customerId. */
+    public static final UUID DEMO_CUSTOMER_ID = UUID.fromString("5b0e7f3c-2a41-4d8e-9c6b-1f2a3b4c5d6e");
+
     private final PasswordEncoder encoder;
     private final Map<String, User> users;
 
@@ -15,11 +19,11 @@ public class DemoUserDirectory {
         this.encoder = encoder;
         String password = encoder.encode("Ford@123");
         this.users = Map.of(
-                "admin@ford.com", new User("admin@ford.com", password, Set.of("ADMIN")),
-                "adviser@ford.com", new User("adviser@ford.com", password, Set.of("ADVISER")),
-                "customer@ford.com", new User("customer@ford.com", password, Set.of("CUSTOMER")),
-                "technician@ford.com", new User("technician@ford.com", password, Set.of("TECHNICIAN")),
-                "vehicle@ford.com", new User("vehicle@ford.com", password, Set.of("VEHICLE")));
+                "admin@ford.com", new User("admin@ford.com", password, Set.of("ADMIN"), null),
+                "adviser@ford.com", new User("adviser@ford.com", password, Set.of("ADVISER"), null),
+                "customer@ford.com", new User("customer@ford.com", password, Set.of("CUSTOMER"), DEMO_CUSTOMER_ID),
+                "technician@ford.com", new User("technician@ford.com", password, Set.of("TECHNICIAN"), null),
+                "vehicle@ford.com", new User("vehicle@ford.com", password, Set.of("VEHICLE"), null));
     }
 
     public Optional<User> authenticate(String username, String password) {
@@ -27,5 +31,5 @@ public class DemoUserDirectory {
         return user != null && encoder.matches(password, user.passwordHash()) ? Optional.of(user) : Optional.empty();
     }
 
-    public record User(String username, String passwordHash, Set<String> roles) {}
+    public record User(String username, String passwordHash, Set<String> roles, UUID customerId) {}
 }

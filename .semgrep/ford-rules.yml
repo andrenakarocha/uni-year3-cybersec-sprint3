@@ -124,15 +124,22 @@ rules:
   - id: ford-customer-read-without-ownership-check-csharp
     languages: [csharp]
     patterns:
-      - pattern: |
-          [Authorize(Roles = "$ROLES")]
-          public $RET $METHOD(Guid $ID, ...) => $BODY;
+      - pattern-either:
+          - pattern: |
+              [Authorize(Roles = "$ROLES")]
+              public $RET $METHOD(Guid $ID, ...) => $BODY;
+          - pattern: |
+              [Authorize(Roles = "$ROLES")]
+              public $RET $METHOD(Guid $ID, ...) { ... }
       - metavariable-regex:
           metavariable: $ROLES
           regex: '.*CUSTOMER.*'
       - pattern-not: |
           [Authorize(Roles = "$ROLES")]
           public $RET $METHOD(Guid $ID, ...) => <... User ...>;
+      - pattern-not: |
+          [Authorize(Roles = "$ROLES")]
+          public $RET $METHOD(Guid $ID, ...) { ... if (<... User ...>) { ... } ... }
     message: >-
       Ação acessível ao papel CUSTOMER busca recurso por ID sem consultar o usuário autenticado
       (User). Qualquer cliente lê ordens de serviço de outros clientes trocando o ID (BOLA).

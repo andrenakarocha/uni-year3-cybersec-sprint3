@@ -15,4 +15,6 @@ security:
   jwt:
     secret: zero-touch-development-secret-change-before-production-0123456789abcdef
     ttl: PT1H
+  field-encryption:
+    key: dGVzdHMtb25seS1maWVsZC1rZXktMzItYnl0ZXMhISE=
 

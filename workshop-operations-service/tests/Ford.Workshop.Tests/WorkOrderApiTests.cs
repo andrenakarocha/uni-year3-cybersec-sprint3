@@ -15,7 +15,7 @@ namespace Ford.Workshop.Tests;
 
 public sealed class WorkOrderApiTests(WorkshopApiFactory factory) : IClassFixture<WorkshopApiFactory>
 {
-    private const string Secret = "zero-touch-development-secret-change-before-production-0123456789abcdef";
+    private const string Secret = WorkshopApiFactory.JwtSecret;
 
     private HttpClient Client(string? token = null)
     {
@@ -24,14 +24,60 @@ public sealed class WorkOrderApiTests(WorkshopApiFactory factory) : IClassFixtur
         return client;
     }
 
-    private static string Token(string role, bool expired = false, string secret = Secret)
+    private static string Token(string role, bool expired = false, string secret = Secret,
+        string algorithm = SecurityAlgorithms.HmacSha256, params string[] vins)
     {
         var now = DateTime.UtcNow;
+        var claims = new List<Claim> { new("sub", "api-test-user"), new("roles", role) };
+        claims.AddRange(vins.Select(vin => new Claim("vins", vin)));
         return new JwtSecurityTokenHandler().WriteToken(new JwtSecurityToken(
             issuer: "ford-zero-touch", audience: "ford-api",
-            claims: new[] { new Claim("sub", "api-test-user"), new Claim("roles", role) },
+            claims: claims,
             notBefore: now.AddHours(-1), expires: expired ? now.AddMinutes(-5) : now.AddHours(1),
-            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), SecurityAlgorithms.HmacSha256)));
+            signingCredentials: new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)), algorithm)));
+    }
+
+    [Fact]
+    public async Task CustomerReadsOnlyWorkOrdersOfOwnVehicles()
+    {
+        using var admin = Client(Token("ADMIN"));
+        var created = await admin.PostAsJsonAsync("/api/v1/work-orders", Payload());
+        var id = (await created.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid();
+
+        using var owner = Client(Token("CUSTOMER", vins: "1FMCU9GDXMUA12345"));
+        Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync($"/api/v1/work-orders/{id}")).StatusCode);
+
+        using var stranger = Client(Token("CUSTOMER", vins: "1FMCU9GDXMUA00000"));
+        await AssertProblem(await stranger.GetAsync($"/api/v1/work-orders/{id}"), HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task EchoesSafeRequestIdAndReplacesForgedOne()
+    {
+        using var client = Client();
+        using var safe = new HttpRequestMessage(HttpMethod.Get, "/health");
+        safe.Headers.Add("X-Request-ID", "gw-5f2c9a1e-trace");
+        Assert.Equal("gw-5f2c9a1e-trace", (await client.SendAsync(safe)).Headers.GetValues("X-Request-ID").Single());
+
+        using var forged = new HttpRequestMessage(HttpMethod.Get, "/health");
+        forged.Headers.TryAddWithoutValidation("X-Request-ID", "forged level=ERROR");
+        var replaced = (await client.SendAsync(forged)).Headers.GetValues("X-Request-ID").Single();
+        Assert.DoesNotContain("forged", replaced);
+        Assert.True(Guid.TryParse(replaced, out _));
+    }
+
+    [Fact]
+    public void MasksEmailInAuditTrail()
+    {
+        Assert.Equal("cu***@ford.com", Ford.Workshop.Api.Web.SecurityAudit.Mask("customer@ford.com"));
+        Assert.Equal("***", Ford.Workshop.Api.Web.SecurityAudit.Mask("api-test-user"));
+    }
+
+    [Fact]
+    public async Task RejectsTokenSignedWithAlgorithmOutsideAllowlist()
+    {
+        using var client = Client(Token("ADMIN", algorithm: SecurityAlgorithms.HmacSha384));
+        await AssertProblem(await client.GetAsync($"/api/v1/work-orders/{Guid.NewGuid()}"), HttpStatusCode.Unauthorized);
     }
 
     private static object Payload() => new
@@ -76,7 +122,7 @@ public sealed class WorkOrderApiTests(WorkshopApiFactory factory) : IClassFixtur
         Assert.Equal("Created", body.GetProperty("status").GetString());
         Assert.Equal("Urgent", body.GetProperty("priority").GetString());
 
-        using var customer = Client(Token("CUSTOMER"));
+        using var customer = Client(Token("CUSTOMER", vins: "1FMCU9GDXMUA12345"));
         var found = await customer.GetAsync($"/api/v1/work-orders/{id}");
         Assert.Equal(HttpStatusCode.OK, found.StatusCode);
         Assert.Equal(id, (await found.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetGuid());

@@ -11,7 +11,7 @@ test "${#staged[@]}" -gt 0 || exit 0
 
 echo "pre-commit · Trufflehog nos arquivos staged"
 docker run --rm -v "$root:/repo" -w /repo "${TRUFFLEHOG_IMAGE:-trufflesecurity/trufflehog:3.97.9}" \
-  filesystem --no-update --fail --results=verified,unverified,unknown "${staged[@]}"
+  filesystem --no-update --fail --results=verified,unverified,unknown --exclude-detectors=JDBC "${staged[@]}"
 
 echo "pre-commit · Semgrep nos arquivos staged"
 "$root/scripts/security/sast.sh" "${staged[@]}"

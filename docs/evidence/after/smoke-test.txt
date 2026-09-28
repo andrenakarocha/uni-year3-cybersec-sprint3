@@ -1,0 +1,42 @@
+PASS health journey
+PASS health intelligence
+PASS health workshop
+PASS authentication profiles
+PASS Problem Details 401 GET /journey/api/v1/journeys/00000000-0000-0000-0000-000000000000
+PASS Problem Details 401 GET /intelligence/api/v1/vehicles/1FMCU9GDXMUA99999/risk
+PASS Problem Details 401 GET /workshop/api/v1/work-orders/00000000-0000-0000-0000-000000000000
+PASS create journey 99aedca7-534a-437d-903e-61f7842fa508
+PASS warm journey cache before recommendation
+PASS Problem Details 404 GET /journey/api/v1/journeys/4b65b57f-62b0-44ed-8ae7-7c5b0d5f1cf0
+PASS Problem Details 404 GET /intelligence/api/v1/vehicles/1FT45063680562427/risk
+PASS customer cannot read another customer's journey or vehicle risk (BOLA)
+PASS ingest telemetry and classify risk
+PASS latest risk replaces previously cached LOW risk
+PASS cross-service recommendation with JWT
+PASS customer reads recommended journey
+PASS schedule journey and invalidate cached state
+PASS create prioritized work order ad7dd8c0-e241-4b26-8efa-119e60987e8e
+PASS Problem Details 409 POST /workshop/api/v1/work-orders
+PASS Problem Details 422 POST /workshop/api/v1/work-orders/ad7dd8c0-e241-4b26-8efa-119e60987e8e/transitions
+PASS Problem Details 403 POST /workshop/api/v1/work-orders/ad7dd8c0-e241-4b26-8efa-119e60987e8e/transitions
+PASS rejected duplicate and transitions preserve original order
+PASS technician transitions and customer reads work order Diagnosing
+PASS technician transitions and customer reads work order AwaitingApproval
+PASS technician transitions and customer reads work order InProgress
+PASS technician transitions and customer reads work order QualityCheck
+PASS technician transitions and customer reads work order Completed
+PASS Problem Details 422 POST /journey/api/v1/journeys/99aedca7-534a-437d-903e-61f7842fa508/transitions
+PASS full journey and work order complete without terminal state regression
+PASS Problem Details 400 POST /journey/api/v1/journeys/99aedca7-534a-437d-903e-61f7842fa508/recommendation
+PASS Problem Details 422 POST /intelligence/api/v1/telemetry
+PASS Problem Details 403 POST /journey/api/v1/journeys
+PASS Problem Details 403 POST /intelligence/api/v1/telemetry
+PASS Problem Details 403 POST /workshop/api/v1/work-orders
+PASS Problem Details 400 POST /journey/api/v1/journeys
+PASS Problem Details 422 POST /intelligence/api/v1/telemetry
+PASS Problem Details 400 POST /workshop/api/v1/work-orders
+PASS Problem Details 404 GET /journey/api/v1/journeys/00000000-0000-0000-0000-000000000000
+PASS Problem Details 404 GET /intelligence/api/v1/vehicles/1FN45064653405867/risk
+PASS Problem Details 404 GET /workshop/api/v1/work-orders/00000000-0000-0000-0000-000000000000
+PASS OpenAPI for all services
+ALL SMOKE TESTS PASSED
