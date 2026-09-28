@@ -110,7 +110,7 @@
 
 <div class="kpis">
   <div class="kpi"><b>22 → 0</b><span>achados SAST (Semgrep) do baseline até o fim da sprint</span></div>
-  <div class="kpi"><b>11</b><span>correções, cada uma em commit próprio e com teste que prova o comportamento</span></div>
+  <div class="kpi"><b>12</b><span>correções, cada uma em commit próprio e verificada por teste ou scan</span></div>
   <div class="kpi"><b>149</b><span>testes automatizados verdes (Java 60 · Python 41 · .NET 48)</span></div>
   <div class="kpi"><b>6 / 6</b><span>cenários de ataque simulados bloqueados na stack real</span></div>
 </div>
@@ -172,7 +172,7 @@
   <thead><tr><th style="width:26%">Etapa (peso)</th><th>O que entregamos</th><th style="width:24%">Evidência</th></tr></thead>
   <tbody>
     <tr><td><strong>1. Pipeline DevSecOps & análise de código</strong> (3,0)</td><td>Pipeline no GitHub Actions com Semgrep (rulesets públicos + 10 regras próprias) e Trufflehog (histórico completo) como gates; pre-commit local; pesquisa e jobs de SCA e Container Security (Trivy).</td><td><code>.github/workflows/devsecops.yml</code>, <code>.semgrep/</code>, <code>docs/evidence/</code></td></tr>
-    <tr><td><strong>2. Segurança em código e infraestrutura</strong> (2,5)</td><td>Criptografia local AES-256-GCM, hardening de API (superfície, rate limit, bloqueio de conta, validação), JWT endurecido nos três serviços, RBAC com autorização por objeto (BOLA).</td><td>11 commits de correção + testes; <code>simulate-attacks.sh</code></td></tr>
+    <tr><td><strong>2. Segurança em código e infraestrutura</strong> (2,5)</td><td>Criptografia local AES-256-GCM, hardening de API (superfície, rate limit, bloqueio de conta, validação), JWT endurecido nos três serviços, RBAC com autorização por objeto (BOLA).</td><td>12 commits de correção + testes; <code>simulate-attacks.sh</code></td></tr>
     <tr><td><strong>3. Logs, alertas e resposta a incidentes</strong> (2,0)</td><td>Trilha <code>security.audit</code> padronizada nos três serviços e no gateway, correlação por <code>request_id</code>, regras de alerta para API, mobile, IoT e ML e playbooks SANS PICERL.</td><td><code>docs/evidence/after/logs/</code></td></tr>
     <tr><td><strong>4. Pesquisa de vulnerabilidades (OWASP)</strong> (2,5)</td><td>Matrizes OWASP Top 10:2025, API Security Top 10:2023, Mobile Top 10:2024 (sobre o código real do app) e ASVS 5.0 nível 2, com análise de risco e plano de mitigação.</td><td>Seção 4 e <code>docs/evidence/mobile/</code></td></tr>
   </tbody>
@@ -180,13 +180,13 @@
 
 <h2>Sumário</h2>
 <div class="toc">
-  <div><b>1. Pipeline DevSecOps & análise de código</b><br>1.1 Desenho do CI/CD · 1.2 Semgrep · 1.3 Trufflehog · 1.4 Como cada etapa reduz riscos · 1.5 SCA e Container Security · 1.6 Execução no projeto Ford</div>
+  <div><b>1. Pipeline DevSecOps & análise de código</b><br>1.1 Desenho do CI/CD · 1.2 Semgrep · 1.3 Trufflehog · 1.4 Como cada etapa reduz riscos · 1.5 SCA e Container Security · 1.6 Execução no projeto Ford · 1.7 Evidências no GitHub Actions</div>
   <div><b>2. Segurança em código e infraestrutura</b><br>2.1 Resumo das correções · 2.2 Segredos · 2.3 Hardening de API · 2.4 JWT seguro · 2.5 Criptografia local · 2.6 RBAC e BOLA · 2.7 IoT (MQTT/TLS)</div>
   <div><b>3. Logs, alertas e resposta a incidentes</b><br>3.1 Plano de monitoramento · 3.2 Logs estruturados reais · 3.3 Métricas e alertas · 3.4 Resposta a incidentes (PICERL)</div>
   <div><b>4. Pesquisa de vulnerabilidades</b><br>4.1 Método · 4.2 OWASP Top 10:2025 · 4.3 API Top 10:2023 · 4.4 Mobile Top 10:2024 · 4.5 ASVS 5.0 · 4.6 Riscos residuais e plano de mitigação · 4.7 STRIDE, LGPD e segurança contínua</div>
 </div>
 
-<div class="callout"><p><strong>Ponto de partida honesto.</strong> O código base é o dos microsserviços de SOA da Sprint 3 (commit <code>e80f10a</code>), importado sem alterações no primeiro commit do repositório (<code>b4568d9</code>). Os componentes de segurança da nossa entrega de SOA + Cyber da Sprint 1 (AES-GCM, AuditLogger, detecção de atividade suspeita) foram trazidos para essa arquitetura atual e melhorados. Todo "antes × depois" deste documento compara esses dois pontos.</p></div>
+<div class="callout"><p><strong>Ponto de partida honesto.</strong> O código base é o dos microsserviços de SOA da Sprint 3 (commit <code>e80f10a</code>), importado sem alterações no primeiro commit do repositório (<code>b7ac674</code>). Os componentes de segurança da nossa entrega de SOA + Cyber da Sprint 1 (AES-GCM, AuditLogger, detecção de atividade suspeita) foram trazidos para essa arquitetura atual e melhorados. Todo "antes × depois" deste documento compara esses dois pontos.</p></div>
 
 <!-- ═════════════════════════════ ETAPA 1 ═════════════════════════════ -->
 <h1><span class="step">Etapa 1 · peso 3,0</span>Pipeline DevSecOps e análise de código</h1>
@@ -289,7 +289,7 @@
 
 <h3>Resultado: baseline × depois das correções</h3>
 <div class="two">
-<pre><code><span class="c">$ make sast        # baseline b4568d9</span>
+<pre><code><span class="c">$ make sast        # baseline b7ac674</span>
 <span class="r">Semgrep: 22 achado(s) — 20 bloqueante(s) (ERROR)</span>
   [ERROR] ford-internal-service-port-published  compose.yml:26
   [ERROR] ford-secret-fallback-in-config  compose.yml:32
@@ -320,7 +320,7 @@ missing a value: defina JWT_SECRET no .env (make env)</span></code></pre>
 </div>
 <p class="small">Figura 3. Saídas reais (<code>docs/evidence/baseline/sast-output.txt</code> e <code>docs/evidence/after/</code>). A lista completa dos 22 achados, com caminho e linha, está no JSON e no SARIF do baseline.</p>
 
-<div class="callout win"><p><strong>O gate funcionou contra nós mesmos.</strong> Ao implementar o rate limit do login, adicionamos um <code>add_header Retry-After</code> dentro de um <code>location</code> do Nginx. O Semgrep (<code>header-redefinition</code>, ruleset <code>p/nginx</code>) acusou na mesma hora: no Nginx, um <code>add_header</code> dentro de <code>location</code> anula os cabeçalhos herdados, e as respostas 429 saíam sem <code>nosniff</code>, <code>X-Frame-Options</code> e <code>Referrer-Policy</code>. Corrigimos no commit <code>271a3aa</code>, antes de chegar à branch principal. Esse é o valor do SAST no pipeline: pegar a regressão no próprio PR.</p></div>
+<div class="callout win"><p><strong>O gate funcionou contra nós mesmos.</strong> Ao implementar o rate limit do login, adicionamos um <code>add_header Retry-After</code> dentro de um <code>location</code> do Nginx. O Semgrep (<code>header-redefinition</code>, ruleset <code>p/nginx</code>) acusou na mesma hora: no Nginx, um <code>add_header</code> dentro de <code>location</code> anula os cabeçalhos herdados, e as respostas 429 saíam sem <code>nosniff</code>, <code>X-Frame-Options</code> e <code>Referrer-Policy</code>. Corrigimos no commit <code>025b5ac</code>, antes de chegar à branch principal. Esse é o valor do SAST no pipeline: pegar a regressão no próprio PR.</p></div>
 
 <h2>1.3 Secret scanning com Trufflehog</h2>
 <p>O Trufflehog varre <strong>todo o histórico git</strong>, não só o estado atual: um segredo removido num commit posterior continua exposto para quem clona o repositório. A política de bloqueio usa o resultado da verificação ativa que o Trufflehog faz contra o provedor da credencial:</p>
@@ -334,7 +334,7 @@ missing a value: defina JWT_SECRET no .env (make env)</span></code></pre>
 </table>
 
 <h3>Triagem de falso positivo</h3>
-<p>No baseline, o gate falhou com 2 resultados do detector <strong>JDBC</strong>: <code>jdbc:postgresql://localhost:5432/journey</code> (application.yml) e <code>jdbc:postgresql://postgres:5432/journey</code> (compose.yml). São URLs sem credencial (usuário e senha entram por <code>DB_USER</code>/<code>DB_PASSWORD</code>), classificadas como <code>unknown</code> porque o verificador não tem senha para testar. Decisão registrada no commit <code>66c8143</code>: excluir o detector JDBC. URLs com credencial embutida continuam cobertas pelos detectores Postgres, MongoDB e URI e pela regra Semgrep <code>ford-secret-fallback-in-config</code>.</p>
+<p>No baseline, o gate falhou com 2 resultados do detector <strong>JDBC</strong>: <code>jdbc:postgresql://localhost:5432/journey</code> (application.yml) e <code>jdbc:postgresql://postgres:5432/journey</code> (compose.yml). São URLs sem credencial (usuário e senha entram por <code>DB_USER</code>/<code>DB_PASSWORD</code>), classificadas como <code>unknown</code> porque o verificador não tem senha para testar. Decisão registrada no commit <code>b6da04e</code>: excluir o detector JDBC. URLs com credencial embutida continuam cobertas pelos detectores Postgres, MongoDB e URI e pela regra Semgrep <code>ford-secret-fallback-in-config</code>.</p>
 
 <h3>Prova do shift-left: pre-commit barrando uma chave privada</h3>
 <pre><code><span class="c">$ git add canary/deploy-key.pem &amp;&amp; git commit   # chave RSA descartável, gerada só para o teste</span>
@@ -384,6 +384,8 @@ File: canary/deploy-key.pem</span>
 </ul>
 </div>
 </div>
+<div class="callout win"><p><strong>O SCA pagou o próprio custo na primeira execução.</strong> No pull request, o Trivy encontrou <strong>4 CVEs críticas</strong> nas dependências Java: três no Tomcat embutido (10.1.55: bypass de restrição de segurança, bypass de autenticação por replay, acesso não autorizado a recursos) e uma no Netty (4.1.135: bypass de roteamento SNI). Encontrou também 2 altas (pgjdbc e netty-codec). Elas vinham com o Spring Boot 3.5.16, que já é a versão 3.5.x mais recente, então atualizar o Boot não resolvia. Fixamos o patch mais recente de cada linha no Gradle (commit <code>3e417f8</code>) e regeneramos o lockfile; o Trivy passou a reportar <strong>0 HIGH/CRITICAL</strong> nos lockfiles e na imagem do customer-journey. Detalhe prático: o aviso indicava o Tomcat 10.1.58 como corrigido, mas essa versão nunca foi publicada no Maven Central, e a correção foi para a 10.1.60.</p>
+<p>Imagens: o .NET (Alpine) e os Dockerfiles saíram sem HIGH/CRITICAL. A imagem Python (<code>python:3.12-slim</code>, Debian) tem 44 CVEs altas em pacotes do sistema (ncurses, systemd, util-linux), boa parte sem correção publicada. Fica como risco residual R7, com a mitigação de migrar para uma imagem distroless.</p></div>
 <p class="small">Nesta POC os jobs de SCA e container são <strong>informativos</strong>: publicam HIGH/CRITICAL na aba Security sem bloquear, porque CVEs de imagens base muitas vezes não têm correção disponível. Em produção, o bloqueio passaria a valer para CRITICAL com correção disponível.</p>
 
 <h2>1.6 Como o pipeline roda no projeto Ford</h2>
@@ -394,7 +396,18 @@ File: canary/deploy-key.pem</span>
   <li>Após o merge, o pipeline roda em <code>main</code>. O deploy proposto publica a imagem assinada, injeta segredos a partir de um cofre (Azure Key Vault ou Vault) e roda o smoke test e o <code>simulate-attacks.sh</code> contra o ambiente.</li>
   <li>Toda segunda-feira o pipeline completo reexecuta em <code>main</code>. Achado novo abre issue para o time.</li>
 </ol>
-<p>Nesta entrega, o fluxo foi seguido de fato: o baseline vulnerável ficou em <code>main</code>, e as 11 correções foram feitas na branch <code>fix/security-hardening</code>, com um commit e um teste por correção.</p>
+<p>Nesta entrega, o fluxo foi seguido de fato: o baseline vulnerável ficou em <code>main</code>, e as 12 correções foram feitas na branch <code>fix/security-hardening</code>, com um commit e um teste por correção.</p>
+
+<h2>1.7 Evidências no GitHub Actions</h2>
+<p>As mesmas etapas rodaram no GitHub. A execução da <code>main</code> escaneia o código vulnerável; a do pull request, o código corrigido. As duas páginas são públicas.</p>
+<figure>
+<img src="img/actions-before.png" alt="Execução do pipeline na main (baseline)" style="width:88%; display:block; margin:0 auto; border:1px solid #d9dde5; border-radius:2mm">
+<figcaption>Figura 7. <strong>Antes</strong>: execução <a href="https://github.com/andrenakarocha/uni-year3-cybersec-sprint3/actions/runs/36365455448">36365455448</a> na <code>main</code> (baseline <code>cc9d189</code>). Trufflehog e Semgrep barram (exit 183 e 1), os testes das três stacks passam e a etapa 3 é pulada, como desenhado. O SARIF abriu <strong>22 alertas</strong> na aba Security, os mesmos 22 do scan local.</figcaption>
+</figure>
+<figure>
+<img src="img/actions-after.png" alt="Execução do pipeline no pull request (corrigido)" style="width:88%; display:block; margin:0 auto; border:1px solid #d9dde5; border-radius:2mm">
+<figcaption>Figura 8. <strong>Depois</strong>: execução <a href="https://github.com/andrenakarocha/uni-year3-cybersec-sprint3/actions/runs/36365554422">36365554422</a> no <a href="https://github.com/andrenakarocha/uni-year3-cybersec-sprint3/pull/2">pull request #2</a> (<code>3e417f8</code>): os 10 jobs verdes, incluindo a etapa 3 (Trivy SCA, 3 imagens e Dockerfiles). A verificação "Semgrep OSS" do Code scanning não aponta nenhum alerta novo no PR.</figcaption>
+</figure>
 
 <!-- ═════════════════════════════ ETAPA 2 ═════════════════════════════ -->
 <h1><span class="step">Etapa 2 · peso 2,5</span>Segurança em código e infraestrutura</h1>
@@ -403,17 +416,18 @@ File: canary/deploy-key.pem</span>
 <table>
   <thead><tr><th style="width:9%">Commit</th><th style="width:25%">Correção</th><th>O que mudou</th><th style="width:24%">Teste que prova</th></tr></thead>
   <tbody>
-    <tr><td><code>66c8143</code></td><td>Triagem Trufflehog</td><td>Detector JDBC excluído com justificativa (falso positivo)</td><td>Gate verde, 0 resultados</td></tr>
-    <tr><td><code>5e2556e</code></td><td>Segredos obrigatórios</td><td>Sem fallback conhecido; <code>make env</code> gera aleatórios; chave &lt; 256 bits recusa o boot</td><td><code>JwtKeyTest</code>, <code>test_config.py</code></td></tr>
-    <tr><td><code>458f874</code></td><td>Superfície mínima</td><td>Só o gateway publicado, em <code>127.0.0.1</code></td><td>Ataque 5: portas fechadas</td></tr>
-    <tr><td><code>9333c27</code></td><td>Anti força bruta + auditoria</td><td>Nginx 5 req/min no login; bloqueio de conta após 5 falhas; eventos <code>auth.login.*</code></td><td><code>AuthLockoutTest</code>, <code>LoginAttemptGuardTest</code></td></tr>
-    <tr><td><code>569a17c</code></td><td>JWT endurecido</td><td>TTL 15 min, <code>jti</code>, <code>exp</code> obrigatório, somente HS256</td><td><code>JwtHardeningTest</code>, testes Python e .NET</td></tr>
-    <tr><td><code>f652e2e</code></td><td>Criptografia local</td><td>VIN com AES-256-GCM + blind index HMAC-SHA256</td><td><code>FieldEncryptionTest</code>, <code>VinEncryptionAtRestTest</code></td></tr>
-    <tr><td><code>271a3aa</code></td><td>Regressão do gateway</td><td>Cabeçalhos de segurança preservados no 429</td><td>Semgrep <code>header-redefinition</code></td></tr>
-    <tr><td><code>c214423</code></td><td>Trilha de auditoria</td><td>Eventos padronizados nos 3 serviços, <code>request_id</code>, log JSON no gateway</td><td><code>SecurityAuditEventsTest</code>, <code>test_observability.py</code></td></tr>
-    <tr><td><code>7802d55</code></td><td>BOLA</td><td>Autorização por objeto nos 3 serviços; 404 para recurso alheio</td><td><code>ObjectLevelAuthorizationTest</code>, smoke</td></tr>
-    <tr><td><code>d18ae08</code></td><td>Migração</td><td><code>vin_hash</code> como varchar (validação de schema no Postgres)</td><td>Stack sobe; smoke passa</td></tr>
-    <tr><td><code>c639072</code></td><td>Timestamps .NET</td><td>Logs JSON do .NET com horário UTC</td><td>Logs capturados</td></tr>
+    <tr><td><code>b6da04e</code></td><td>Triagem Trufflehog</td><td>Detector JDBC excluído com justificativa (falso positivo)</td><td>Gate verde, 0 resultados</td></tr>
+    <tr><td><code>87f0e5f</code></td><td>Segredos obrigatórios</td><td>Sem fallback conhecido; <code>make env</code> gera aleatórios; chave &lt; 256 bits recusa o boot</td><td><code>JwtKeyTest</code>, <code>test_config.py</code></td></tr>
+    <tr><td><code>b11ef00</code></td><td>Superfície mínima</td><td>Só o gateway publicado, em <code>127.0.0.1</code></td><td>Ataque 5: portas fechadas</td></tr>
+    <tr><td><code>22e0300</code></td><td>Anti força bruta + auditoria</td><td>Nginx 5 req/min no login; bloqueio de conta após 5 falhas; eventos <code>auth.login.*</code></td><td><code>AuthLockoutTest</code>, <code>LoginAttemptGuardTest</code></td></tr>
+    <tr><td><code>3363fb7</code></td><td>JWT endurecido</td><td>TTL 15 min, <code>jti</code>, <code>exp</code> obrigatório, somente HS256</td><td><code>JwtHardeningTest</code>, testes Python e .NET</td></tr>
+    <tr><td><code>b519776</code></td><td>Criptografia local</td><td>VIN com AES-256-GCM + blind index HMAC-SHA256</td><td><code>FieldEncryptionTest</code>, <code>VinEncryptionAtRestTest</code></td></tr>
+    <tr><td><code>025b5ac</code></td><td>Regressão do gateway</td><td>Cabeçalhos de segurança preservados no 429</td><td>Semgrep <code>header-redefinition</code></td></tr>
+    <tr><td><code>5b15e0f</code></td><td>Trilha de auditoria</td><td>Eventos padronizados nos 3 serviços, <code>request_id</code>, log JSON no gateway</td><td><code>SecurityAuditEventsTest</code>, <code>test_observability.py</code></td></tr>
+    <tr><td><code>d3cfe2c</code></td><td>BOLA</td><td>Autorização por objeto nos 3 serviços; 404 para recurso alheio</td><td><code>ObjectLevelAuthorizationTest</code>, smoke</td></tr>
+    <tr><td><code>bd2d543</code></td><td>Migração</td><td><code>vin_hash</code> como varchar (validação de schema no Postgres)</td><td>Stack sobe; smoke passa</td></tr>
+    <tr><td><code>4a85024</code></td><td>Timestamps .NET</td><td>Logs JSON do .NET com horário UTC</td><td>Logs capturados</td></tr>
+    <tr><td><code>3e417f8</code></td><td>Dependências (SCA)</td><td>Tomcat 10.1.60, Netty 4.1.138, pgjdbc 42.7.13: 4 CVEs críticas e 2 altas apontadas pelo Trivy no PR</td><td>Trivy: 0 HIGH/CRITICAL; 60 testes + smoke</td></tr>
   </tbody>
 </table>
 <p class="small">Além delas: 4 commits de pipeline e regras (na <code>main</code>, antes do scan do baseline), 1 de regras do app mobile, 1 do roteiro de ataques e 2 de evidências. Os dois últimos bugs da tabela só apareceram ao rodar a stack real, depois dos testes unitários verdes, o que justifica ter a execução ponta a ponta como parte da validação.</p>
@@ -736,7 +750,7 @@ sum by (user_name) (
   <tbody>
     <tr><td>A01 Broken Access Control</td><td>Cliente lia dados de outros clientes (BOLA encontrado no baseline)</td><td>RBAC nos 3 serviços; autorização por objeto com <code>customer_id</code>/<code>vins</code>; 404 para recurso alheio; testes e smoke</td><td><span class="chip ok">Mitigado</span></td></tr>
     <tr><td>A02 Security Misconfiguration</td><td>Portas internas expostas; segredos padrão; cabeçalhos perdidos no 429</td><td>Só o gateway exposto; <code>${VAR:?}</code>; headers; Problem Details sem stack trace; <code>/actuator</code> só para ADMIN. Residual: Swagger público</td><td><span class="chip warn">Parcial</span></td></tr>
-    <tr><td>A03 Software Supply Chain Failures</td><td>3 ecossistemas de pacotes + imagens base + actions do CI</td><td>Trivy SCA e imagens; lockfiles (<code>--locked</code>); actions por SHA; imagens por versão. Residual: sem SBOM, assinatura e Dependabot</td><td><span class="chip warn">Parcial</span></td></tr>
+    <tr><td>A03 Software Supply Chain Failures</td><td>3 ecossistemas de pacotes + imagens base + actions do CI. <strong>4 CVEs críticas reais</strong> no Tomcat e no Netty</td><td>Trivy SCA encontrou as 4 e elas foram corrigidas (<code>3e417f8</code>); lockfiles (<code>--locked</code>); actions por SHA; imagens por versão. Residual: 44 altas no SO da imagem Python; sem SBOM, assinatura e Dependabot</td><td><span class="chip warn">Parcial</span></td></tr>
     <tr><td>A04 Cryptographic Failures</td><td>VIN em texto puro; chave da Sprint 1 com baixa entropia</td><td>AES-256-GCM + blind index; subchaves derivadas; BCrypt(12); JWT ≥ 256 bits. Residual: sem TLS de ponta a ponta na POC; VIN decifrado no cache Redis</td><td><span class="chip warn">Parcial</span></td></tr>
     <tr><td>A05 Injection</td><td>SQL (JPA, EF Core), NoSQL (Mongo), log</td><td>Consultas parametrizadas pelos ORMs; validação de schema em todas as entradas; <code>request_id</code> saneado contra injeção de log</td><td><span class="chip ok">Mitigado</span></td></tr>
     <tr><td>A06 Insecure Design</td><td>Controles de negócio (bloqueio, posse, limites físicos)</td><td>Lockout que não revela contas; 404 anti-enumeração; máquina de estados das jornadas e ordens; STRIDE (4.7). Residual: sem MFA</td><td><span class="chip warn">Parcial</span></td></tr>
@@ -815,7 +829,7 @@ sum by (user_name) (
     <tr><td>R4</td><td>Sem revogação de token antes do vencimento</td><td class="num">2</td><td class="num">2</td><td><span class="chip warn">Médio 4</span></td></tr>
     <tr><td>R5</td><td>VIN decifrado no cache Redis (5 min)</td><td class="num">1</td><td class="num">2</td><td><span class="chip plan">Baixo 2</span></td></tr>
     <tr><td>R6</td><td>Sem MFA para equipe (ADVISER, ADMIN)</td><td class="num">2</td><td class="num">2</td><td><span class="chip warn">Médio 4</span></td></tr>
-    <tr><td>R7</td><td>Supply chain sem SBOM e sem assinatura de imagem</td><td class="num">1</td><td class="num">3</td><td><span class="chip warn">Médio 3</span></td></tr>
+    <tr><td>R7</td><td>44 CVEs altas no SO da imagem Python; sem SBOM e sem assinatura de imagem</td><td class="num">2</td><td class="num">2</td><td><span class="chip warn">Médio 4</span></td></tr>
     <tr><td>R8</td><td>Swagger público e contas demo fixas</td><td class="num">2</td><td class="num">1</td><td><span class="chip plan">Baixo 2</span></td></tr>
   </tbody>
 </table>
@@ -828,7 +842,7 @@ sum by (user_name) (
     <tr><td><span class="chip bad">P1</span></td><td>Denylist de <code>jti</code> no Redis para logout e revogação</td><td>R4</td></tr>
     <tr><td><span class="chip warn">P2</span></td><td>RS256 com JWKS; segredos em cofre (Azure Key Vault) com rotação trimestral</td><td>R3</td></tr>
     <tr><td><span class="chip warn">P2</span></td><td>MFA (TOTP) para ADVISER e ADMIN</td><td>R6</td></tr>
-    <tr><td><span class="chip warn">P2</span></td><td>Dependabot, SBOM CycloneDX, assinatura Cosign e política de admissão</td><td>R7</td></tr>
+    <tr><td><span class="chip warn">P2</span></td><td>Imagem Python distroless; Dependabot, SBOM CycloneDX, assinatura Cosign e política de admissão</td><td>R7</td></tr>
     <tr><td><span class="chip plan">P3</span></td><td>Cache sem dado pessoal (ou cifrado); Swagger desligado em produção; DAST (OWASP ZAP) no pipeline; SIEM gerenciado</td><td>R5, R8</td></tr>
   </tbody>
 </table>

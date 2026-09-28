@@ -20,10 +20,11 @@ Entrega de Cybersecurity da Sprint 3: a segurança da solução Ford Zero Touch 
 | Segredos no histórico (Trufflehog, verified/unknown) | 2 falsos positivos triados | **0** |
 | Cliente lê dados de outro cliente (BOLA) | sim, nos 3 serviços | **bloqueado (404)** |
 | VIN no banco | texto puro | **AES-256-GCM** |
+| CVEs críticas nas dependências Java (SCA/Trivy) | 4 (Tomcat, Netty) | **0** |
 | Testes automatizados | — | **149 verdes** (Java 60 · Python 41 · .NET 48) |
 | Ataques simulados na stack real | — | **6/6 bloqueados** |
 
-O código de partida são os microsserviços da entrega de SOA da Sprint 3, importados sem alteração no primeiro commit (`b4568d9`) para servir de "antes". Os componentes de segurança da nossa entrega de SOA + Cyber da Sprint 1 (criptografia de campo, trilha de auditoria) foram trazidos e melhorados. Cada correção está em um commit próprio, com teste, na branch `fix/security-hardening`.
+O código de partida são os microsserviços da entrega de SOA da Sprint 3, importados sem alteração no primeiro commit (`b7ac674`) para servir de "antes". Os componentes de segurança da nossa entrega de SOA + Cyber da Sprint 1 (criptografia de campo, trilha de auditoria) foram trazidos e melhorados. Cada correção está em um commit próprio, com teste, na branch `fix/security-hardening`.
 
 ## Arquitetura
 
